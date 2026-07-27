@@ -6,7 +6,7 @@ any cwd.
 
 ## Contents
 
-- `commands/atg/*.md` — 19 `/atg:*` slash commands.
+- `commands/atg/*.md` — 20 `/atg:*` slash commands.
 - `skills/<name>/` — 6 flat skill directories (flattened from the repo's nested
   `skills/atg/<name>/` layout, which omp does not discover).
 - `link.sh` — idempotent installer.
@@ -30,7 +30,7 @@ To point a wavebid checkout or worktree at the kit (so Cursor's project-relative
 ```
 
 This replaces real dirs with symlinks and refuses to run unless the kit has a clean
-commit with 19 commands and 6 skills.
+commit with 20 commands and 6 skills.
 
 ## Why this exists
 
