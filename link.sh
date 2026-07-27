@@ -70,6 +70,15 @@ copy_commands_flat_to() {
         ' "$f"
         n=$((n + 1))
     done
+    # Assert no output kept frontmatter on line 1 — catches a silent awk
+    # portability failure ([[:space:]] on older BWK awk) loudly instead of
+    # shipping mangled files that render as "--- (user)" in Cursor's picker.
+    local bad
+    bad=$(for fb in "$dest"/atg-*.md; do [ "$(head -1 "$fb")" = "---" ] && echo "$fb"; done)
+    if [ -n "$bad" ]; then
+        echo "refusing: frontmatter not stripped from (awk failure?): $bad" >&2
+        exit 1
+    fi
     echo "$n"
 }
 
