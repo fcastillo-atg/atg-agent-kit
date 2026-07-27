@@ -1,24 +1,32 @@
 #!/usr/bin/env bash
 # Idempotent deployer for atg-agent-kit.
 #   ./link.sh                      # user-level: ~/.claude/{commands/atg,skills}
+#                                  #              ~/.cursor/commands/atg-*.md
 #   ./link.sh --checkout <root>    # a wavebid checkout/worktree + its subrepos
 #
-# Asymmetry is load-bearing and mandated by omp's discovery model
-# (omp://fs-scan-cache-architecture.md + omp://slash-command-internals.md):
-#   - COMMANDS are deployed as REAL FILE COPIES. omp's command glob uses
-#     ignore::WalkBuilder with follow_links OFF and loadFilesFromDir filters
-#     fileType:File, so a symlinked .md is yielded then DROPPED (file_type is
-#     Symlink, not File). Cursor's project walker likewise dead-ends on the
-#     .cursor -> .claude -> kit dir-symlink chain. Real files pass everywhere.
-#     Trade-off: kit is source of truth — re-run link.sh after editing a command.
-#   - SKILLS are deployed as per-DIRECTORY SYMLINKS. Skill discovery is
-#     readdir-based and follows dir symlinks, so the kit stays single-source.
+# Asymmetry is load-bearing and mandated by each tool's discovery model:
+#   - omp COMMANDS (~/.claude/commands/atg/): REAL FILE COPIES in a subdir,
+#     WITH frontmatter. omp's command glob uses ignore::WalkBuilder
+#     (follow_links OFF) and loadFilesFromDir filters fileType:File, so a
+#     symlinked .md is yielded then DROPPED. omp renders the frontmatter
+#     description in its picker.
+#   - Cursor COMMANDS (~/.cursor/commands/atg-*.md): REAL FILE COPIES, FLAT
+#     (no subdir — the CLI reads flat ~/.cursor/commands/*.md only), with YAML
+#     frontmatter STRIPPED and the description promoted to line 1. Cursor's CLI
+#     picker uses the file's first line as the description; a leading --- renders
+#     as "--- (user)". omp is unaffected — it reads intact frontmatter from
+#     ~/.claude. Cursor is served entirely user-level; project-level .cursor/
+#     deploys only caused UI duplicates (brief + atg-brief).
+#   - SKILLS (~/.claude/skills/<name>): per-DIRECTORY SYMLINKS. Skill discovery
+#     is readdir-based and follows dir symlinks, so the kit stays single-source.
+# Kit is source of truth — re-run link.sh after editing a command.
 set -euo pipefail
 
 KIT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Materialize commands/atg/*.md (except README.md) as real files at $1.
-# Wipes $1 first so deletes propagate. Echoes the count copied.
+# Materialize commands/atg/*.md (except README.md) as real files at $1, WITH
+# frontmatter intact (omp renders the description field). Wipes $1 first so
+# deletes propagate. Echoes the count copied.
 copy_commands_to() {
     local dest="$1"
     rm -rf "$dest"
@@ -29,6 +37,37 @@ copy_commands_to() {
         # register as /atg:README in autocomplete.
         [[ "$(basename "$f")" == "README.md" ]] && continue
         cp "$f" "$dest/$(basename "$f")"
+        n=$((n + 1))
+    done
+    echo "$n"
+}
+
+# Materialize commands/atg/*.md as FLAT $1/atg-<name>.md with YAML frontmatter
+# STRIPPED and the description promoted to line 1 — the format Cursor's CLI
+# picker needs (it uses line 1 as the description; a leading --- shows as
+# "--- (user)"). Wipes only prior atg-*.md so siblings (rams.md, pgsd/) survive.
+# Files without frontmatter are copied verbatim (their H1 already renders).
+copy_commands_flat_to() {
+    local dest="$1"
+    mkdir -p "$dest"
+    rm -f "$dest"/atg-*.md
+    local n=0 f base out
+    for f in "$KIT"/commands/atg/*.md; do
+        base=$(basename "$f")
+        [[ "$base" == "README.md" ]] && continue
+        out="$dest/atg-${base%.md}.md"
+        awk -v out="$out" '
+            BEGIN { infm=0; have_desc=0; desc=""; body="" }
+            NR==1 && /^---[[:space:]]*$/ { infm=1; next }
+            infm && /^---[[:space:]]*$/ { infm=0; next }
+            infm && /^description:[[:space:]]*/ { sub(/^description:[[:space:]]*/, ""); desc=$0; have_desc=1; next }
+            infm { next }
+            { body = body $0 "\n" }
+            END {
+                if (have_desc) { print desc > out; print "" > out }
+                printf "%s", body > out
+            }
+        ' "$f"
         n=$((n + 1))
     done
     echo "$n"
@@ -50,15 +89,17 @@ link_skills_to() {
 }
 
 link_user() {
-    # User-level command dirs. omp reads ~/.claude/commands/; Cursor Agent reads
-    # ~/.cursor/commands/ (that's where its pgsd/ lives, and atg was missing there
-    # — the Cursor failure). Deploy real files to BOTH so each tool finds /atg:*
-    # from any cwd. Skills symlink into ~/.claude/skills (omp skill discovery).
+    # omp reads ~/.claude/commands/atg/ (subdir, frontmatter intact). Cursor's
+    # CLI reads FLAT ~/.cursor/commands/atg-*.md with frontmatter stripped
+    # (line 1 = description). Skills symlink into ~/.claude/skills (omp skill
+    # discovery follows dir symlinks). Cursor is served entirely user-level —
+    # no project-level deploy, which only caused UI duplicates.
     local n
     n=$(copy_commands_to "$HOME/.claude/commands/atg")
-    echo "  copied $n commands -> ~/.claude/commands/atg (omp)"
-    copy_commands_to "$HOME/.cursor/commands/atg" >/dev/null
-    echo "  copied $n commands -> ~/.cursor/commands/atg (Cursor Agent)"
+    echo "  copied $n commands -> ~/.claude/commands/atg/ (omp, frontmatter intact)"
+    rm -rf "$HOME/.cursor/commands/atg"   # stale subdir from older link.sh (caused UI dups)
+    n=$(copy_commands_flat_to "$HOME/.cursor/commands")
+    echo "  copied $n commands -> ~/.cursor/commands/atg-*.md (Cursor CLI+UI, frontmatter stripped)"
     local m
     m=$(link_skills_to "$HOME/.claude/skills")
     echo "  linked $m skills -> ~/.claude/skills (dir symlinks)"
@@ -82,31 +123,25 @@ assert_backup_ready() {
     echo "  backup verified: $cmds commands, $skills skills, clean tree @ $(git -C "$KIT" rev-parse --short HEAD)"
 }
 
-# Deploy into a wavebid checkout/worktree. Every path a tool reads commands from
-# gets REAL FILES: omp's glob and Cursor's project walker both drop symlinked .md
-# and dir-symlinks (omp://fs-scan-cache-architecture.md), so we materialize
-# .claude/commands/atg (Claude Code project) AND .cursor/commands/atg (Cursor) at
-# the checkout root and each subrepo. Skills stay a dir symlink — omp skill
-# discovery follows dir symlinks.
+# Deploy into a wavebid checkout/worktree. omp + Claude Code read project-level
+# .claude/commands/atg/ (subdir, frontmatter intact). Cursor is served entirely
+# by link_user's user-level flat deploy, so we do NOT touch project .cursor/ —
+# we only remove any stale .cursor/commands/atg subdir left by older link.sh
+# versions (it caused UI duplicates). Skills stay a dir symlink.
 link_checkout() {
     local root="$1"
     [[ -d "$root/.claude" ]] || { echo "not a wavebid root: $root" >&2; exit 1; }
     assert_backup_ready
     local n
     n=$(copy_commands_to "$root/.claude/commands/atg")
-    # Cursor reads .cursor/commands/atg; materialize at root + each subrepo
-    # that has a .cursor tree (its current dir-symlink would dead-end Cursor).
-    local cursor_sites=0 sub
+    local sub
     for sub in "" "wavebid-a2o-service" "wavebid-a2o-ui"; do
-        if [ -d "$root/$sub/.cursor" ]; then
-            copy_commands_to "$root/$sub/.cursor/commands/atg" >/dev/null
-            cursor_sites=$((cursor_sites + 1))
-        fi
+        rm -rf "$root/$sub/.cursor/commands/atg"
     done
     rm -rf "$root/.claude/skills/atg"
     mkdir -p "$root/.claude/skills"
     ln -sfn "$KIT/skills" "$root/.claude/skills/atg"
-    echo "  deployed $root: $n cmd copies (.claude) + $cursor_sites .cursor sites + skill symlink"
+    echo "  deployed $root: $n cmd copies (.claude) + skill symlink (Cursor served user-level by link_user)"
 }
 
 if [[ "${1:-}" == "--checkout" ]]; then
