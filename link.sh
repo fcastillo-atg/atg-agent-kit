@@ -78,20 +78,31 @@ assert_backup_ready() {
     echo "  backup verified: $cmds commands, $skills skills, clean tree @ $(git -C "$KIT" rev-parse --short HEAD)"
 }
 
-# Deploy into a wavebid checkout/worktree. Commands become real files so Cursor's
-# project walker (which resolves .cursor/commands/atg -> ../../.claude/commands/atg)
-# finds them; the subrepos' own .claude/commands/atg symlinks chain into these.
-# Skills stay a dir symlink — omp skill discovery follows dir symlinks.
+# Deploy into a wavebid checkout/worktree. Every path a tool reads commands from
+# gets REAL FILES: omp's glob and Cursor's project walker both drop symlinked .md
+# and dir-symlinks (omp://fs-scan-cache-architecture.md), so we materialize
+# .claude/commands/atg (Claude Code project) AND .cursor/commands/atg (Cursor) at
+# the checkout root and each subrepo. Skills stay a dir symlink — omp skill
+# discovery follows dir symlinks.
 link_checkout() {
     local root="$1"
     [[ -d "$root/.claude" ]] || { echo "not a wavebid root: $root" >&2; exit 1; }
     assert_backup_ready
     local n
     n=$(copy_commands_to "$root/.claude/commands/atg")
+    # Cursor reads .cursor/commands/atg; materialize at root + each subrepo
+    # that has a .cursor tree (its current dir-symlink would dead-end Cursor).
+    local cursor_sites=0 sub
+    for sub in "" "wavebid-a2o-service" "wavebid-a2o-ui"; do
+        if [ -d "$root/$sub/.cursor" ]; then
+            copy_commands_to "$root/$sub/.cursor/commands/atg" >/dev/null
+            cursor_sites=$((cursor_sites + 1))
+        fi
+    done
     rm -rf "$root/.claude/skills/atg"
     mkdir -p "$root/.claude/skills"
     ln -sfn "$KIT/skills" "$root/.claude/skills/atg"
-    echo "  deployed $root: $n command copies + skill dir-symlink -> $KIT"
+    echo "  deployed $root: $n cmd copies (.claude) + $cursor_sites .cursor sites + skill symlink"
 }
 
 if [[ "${1:-}" == "--checkout" ]]; then
