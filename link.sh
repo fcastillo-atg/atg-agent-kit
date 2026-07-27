@@ -50,11 +50,15 @@ link_skills_to() {
 }
 
 link_user() {
-    # omp reads user-level commands; Cursor reads project-level. Deploy real
-    # files at the user level so omp (and Claude Code CLI) find them from any cwd.
+    # User-level command dirs. omp reads ~/.claude/commands/; Cursor Agent reads
+    # ~/.cursor/commands/ (that's where its pgsd/ lives, and atg was missing there
+    # — the Cursor failure). Deploy real files to BOTH so each tool finds /atg:*
+    # from any cwd. Skills symlink into ~/.claude/skills (omp skill discovery).
     local n
     n=$(copy_commands_to "$HOME/.claude/commands/atg")
-    echo "  copied $n commands -> ~/.claude/commands/atg (real files)"
+    echo "  copied $n commands -> ~/.claude/commands/atg (omp)"
+    copy_commands_to "$HOME/.cursor/commands/atg" >/dev/null
+    echo "  copied $n commands -> ~/.cursor/commands/atg (Cursor Agent)"
     local m
     m=$(link_skills_to "$HOME/.claude/skills")
     echo "  linked $m skills -> ~/.claude/skills (dir symlinks)"
