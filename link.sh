@@ -74,7 +74,7 @@ copy_commands_flat_to() {
     # portability failure ([[:space:]] on older BWK awk) loudly instead of
     # shipping mangled files that render as "--- (user)" in Cursor's picker.
     local bad
-    bad=$(for fb in "$dest"/atg-*.md; do [ "$(head -1 "$fb")" = "---" ] && echo "$fb"; done)
+    bad=$(for fb in "$dest"/atg-*.md; do if [ "$(head -1 "$fb")" = "---" ]; then echo "$fb"; fi; done)
     if [ -n "$bad" ]; then
         echo "refusing: frontmatter not stripped from (awk failure?): $bad" >&2
         exit 1
