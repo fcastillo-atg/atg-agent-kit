@@ -156,6 +156,26 @@ Merge order: {list remaining branches in order}
 
 {flag name and behavior if a feature flag is present in the diff; "No feature flag" otherwise}
 
+### Before / After (example)
+
+{Include this subsection only when the story / `## As-built` / branch changes / diff show a **user-visible contract** change — e.g. new or changed CSV columns, API request/response fields, query params, or UI-visible labels — **or** an explicit behavior change called out in As-built / Pre-Analysis.
+
+Skip entirely for pure refactors, test-only, infra, or internal renames with no observable contract change.
+
+**Lead with the new capability** (not the edge case):
+- **Before:** prior CSV headers / JSON shape / labels with a realistic sample.
+- **After:** the same example with the new fields/columns populated.
+- Optional third mini-example when the contract supports “field alone” or “omit = no change.”
+- 1–2 sentence caption of what changes for the caller.
+
+Prefer examples from the story or As-built over inventing large edge matrices.}
+
+## Behavior change to flag for reviewers
+
+{Include this heading **only** when As-built / Pre-Analysis documents an intentional behavior delta (e.g. Clear → no-op). Keep it short; do not duplicate the Before/After hero table here.
+
+If there is no intentional behavior delta, **omit this heading entirely**.}
+
 ## Testing
 
 See: `bin/stories/{year}/{month}/{TICKET}-{slug}/testing/TESTING-GUIDE.md`
@@ -244,6 +264,8 @@ Status:   {Draft PR — Jira stays In Development | Code Review (transitioned vi
 - Keep all template checklist items intact (`- [ ] ...`).
 - The ATG summary block goes **above** `#### Requirements`.
 - If `implementation-plan.md` is missing or has no `### Branch N:` for this slice, generate a concise summary from the diff instead.
+- **Before / After** (when included) must highlight the **new capability**; put regressions / edge semantics under **Behavior change to flag for reviewers**, not as the primary table.
+- Prefer story / As-built examples over inventing edge matrices. Omit Before/After and Behavior change headings when they do not apply.
 
 ## Error Handling
 

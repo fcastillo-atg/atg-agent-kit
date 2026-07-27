@@ -29,6 +29,7 @@ This namespace contains project-specific commands for the wavebid-a2o-service Sp
 | **Post-merge** | `/atg:retro` | After all PRs merged | Patterns appended to `CLAUDE.md` |
 | **Anytime** | `/atg:status` | On-demand | Branch state + CI + Jira snapshot |
 | | `/atg:story-view` | On-demand | Read-only visual dashboard (Artifact link) of a story's full lifecycle position |
+| | `/atg:explain` | On-demand | Plain-language “what am I merging?” brief with before/after examples |
 | **Shortcut** | `/atg:story-auto-run` | Optional, one branch at a time | Chains brief → story-plan → story-impl → (feature-flag) → verify → review-codebase → (changeset) → story-gap → (As-built, last branch) → testing-doc (last branch); stops at a hard blocker; never runs `ship` or `qa-comment` |
 
 ---
@@ -138,6 +139,9 @@ This namespace contains project-specific commands for the wavebid-a2o-service Sp
 
   /atg:status  ─── usable at any point ──────────────────────────────────────
     └─ reads ## Branch strategy  →  queries gh + Jira  →  prints state table
+
+  /atg:explain ─── usable at any point ──────────────────────────────────────
+    └─ ticket + branch/PR diff → plain-language brief + before/after examples
 ```
 
 ### Command flow (Mermaid)
@@ -162,6 +166,7 @@ flowchart TD
     QACOMMENT -->|all PRs merged| RETRO["/atg:retro"]
 
     STATUS["/atg:status (anytime)"]
+    EXPLAIN["/atg:explain (anytime)"]
 ```
 
 ### `## As-built` data flow
@@ -480,6 +485,30 @@ Branches: 3 planned
 
 Progress: 1/3 branches merged
 ```
+
+---
+
+### `/atg:explain`
+Plain-language “what am I merging?” brief — ticket intent, light tech surfaces, before/after examples, behavior matrix, merge confidence. Read-only.
+
+**Usage:**
+```bash
+/atg:explain
+/atg:explain WBPR-4595
+/atg:explain WBPR-4595 --pr 3286
+```
+
+**When to use:**
+- Before merging or reviewing a PR you do not fully understand
+- When you want concrete CSV/API/UI before→after examples from the real diff
+- Anytime — not part of the required lifecycle chain
+
+**What it does:**
+- Resolves `{TICKET}` from the arg or current branch; diffs `origin/main...HEAD` or `gh pr diff` with `--pr N`
+- Loads story artifacts + changeset + Jira comments best-effort (does not block if missing)
+- Classifies the change surface (CSV / API / UI / schema) and invents examples from **real symbols in the code**
+- Calls out intentional behavior changes (e.g. Clear-on-blank → no-op)
+- Responds in the user’s language; never dumps raw `git diff`, never commits or posts to Jira
 
 ---
 
