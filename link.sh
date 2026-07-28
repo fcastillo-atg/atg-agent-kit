@@ -77,7 +77,7 @@ copy_commands_flat_to() {
     bad=$(for fb in "$dest"/atg-*.md; do if [ "$(head -1 "$fb")" = "---" ]; then echo "$fb"; fi; done)
     if [ -n "$bad" ]; then
         echo "refusing: frontmatter not stripped from (awk failure?): $bad" >&2
-        exit 1
+        return 1
     fi
     echo "$n"
 }
@@ -107,7 +107,7 @@ link_user() {
     n=$(copy_commands_to "$HOME/.claude/commands/atg")
     echo "  copied $n commands -> ~/.claude/commands/atg/ (omp, frontmatter intact)"
     rm -rf "$HOME/.cursor/commands/atg"   # stale subdir from older link.sh (caused UI dups)
-    n=$(copy_commands_flat_to "$HOME/.cursor/commands")
+    n=$(copy_commands_flat_to "$HOME/.cursor/commands") || exit 1
     echo "  copied $n commands -> ~/.cursor/commands/atg-*.md (Cursor CLI+UI, frontmatter stripped)"
     local m
     m=$(link_skills_to "$HOME/.claude/skills")
