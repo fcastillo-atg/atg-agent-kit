@@ -139,7 +139,10 @@ assert_backup_ready() {
 # versions (it caused UI duplicates). Skills stay a dir symlink.
 link_checkout() {
     local root="$1"
-    [[ -d "$root/.claude" ]] || { echo "not a wavebid root: $root" >&2; exit 1; }
+    # Guard on wavebid structure, NOT $root/.claude — .claude is gitignored, so a
+    # fresh `git worktree add` has none until we create it (copy_commands_to mkdirs).
+    [[ -d "$root/wavebid-a2o-service" && -d "$root/wavebid-a2o-ui" ]] \
+        || { echo "not a wavebid root (expected wavebid-a2o-service + wavebid-a2o-ui): $root" >&2; exit 1; }
     assert_backup_ready
     local n
     n=$(copy_commands_to "$root/.claude/commands/atg")
