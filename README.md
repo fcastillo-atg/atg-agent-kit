@@ -1,43 +1,56 @@
 # atg-agent-kit
 
-Personal `atg` slash commands and skills for Claude Code / omp. Git-tracked backup
-and single source of truth; linked into the runtimes via symlinks so they load from
-any cwd.
+Personal `atg` slash commands and skills for Claude Code, omp, and Cursor. Git-tracked
+backup and single source of truth; `link.sh` deploys them into each runtime's native
+format so they load from any cwd or worktree.
 
 ## Contents
 
-- `commands/atg/*.md` — 20 `/atg:*` slash commands.
+- `commands/atg/*.md` — 19 `/atg:*` slash commands (plus `README.md`, which is
+  documentation and excluded from deploys).
 - `skills/<name>/` — 6 flat skill directories (flattened from the repo's nested
   `skills/atg/<name>/` layout, which omp does not discover).
 - `link.sh` — idempotent installer.
 
-## Install
+## Install (user-level, any machine)
 
 ```bash
 ~/ATG/atg-agent-kit/link.sh
 ```
 
-Creates per-file symlinks `~/.claude/commands/atg/*.md` → kit, and per-directory
-symlinks `~/.claude/skills/<name>` → kit. Safe to re-run; prunes only links that
-already point into this kit. Restart omp (or start a new Claude Code session) after
-the first install — command and skill discovery runs at session init, not on a watcher.
+Deploys three ways — each tool reads a different path/format:
 
-To point a wavebid checkout or worktree at the kit (so Cursor's project-relative
-`.claude/` paths resolve to the same content):
+- **omp** → `~/.claude/commands/atg/*.md` — real file copies in a subdir, **with**
+  YAML frontmatter (omp renders `description:` in its picker). Exposed as `/atg:brief`.
+- **Cursor (CLI + UI)** → `~/.cursor/commands/atg-*.md` — real file copies, **flat**
+  (no subdir), with YAML frontmatter **stripped** and the description hoisted to line 1.
+  Cursor's CLI picker uses line 1 as the description; a leading `---` renders as
+  `--- (user)`. Exposed as `/atg-brief` (hyphen — Cursor has no `ns:cmd` syntax).
+- **skills** → `~/.claude/skills/<name>/` — per-directory symlinks (omp skill discovery
+  follows dir symlinks, so the kit stays single-source).
+
+Commands are real file copies (not symlinks) because omp's command glob drops symlinked
+`.md`, and Cursor's walker dead-ends on dir symlinks. Trade-off: the kit is the source of
+truth — re-run `link.sh` after editing a command.
+
+Safe to re-run; prunes only its own prior outputs. Restart omp / Cursor Agent after the
+first install — discovery runs at session init, not on a watcher.
+
+## Point a wavebid checkout/worktree at the kit
 
 ```bash
 ~/ATG/atg-agent-kit/link.sh --checkout /path/to/wavebid-a2o
 ```
 
-This replaces real dirs with symlinks and refuses to run unless the kit has a clean
-commit with 20 commands and 6 skills.
+Deploys real file copies into `<root>/.claude/commands/atg/` (Claude Code project) and
+re-links skills. Cursor is served entirely user-level (above), so this does **not** touch
+project `.cursor/` — it only removes any stale `.cursor/commands/atg/` subdir left by
+older `link.sh` versions (those caused UI duplicates). Refuses to run unless the kit has a
+clean commit.
 
 ## Why this exists
 
 The content previously lived as untracked real directories inside the gitignored
-`wavebid-a2o/.claude/` tree — invisible to `git`, destroyed by `git clean -xfd`, and
-(the skills) undiscoverable by omp because of their nesting depth. This kit fixes all
-three: real git history, cwd-independent symlinks, and a flat skill layout.
-
-See `local://atg-agent-kit-migration-plan.md` for the full rationale and the
-load-bearing asymmetry between command links (per-file) and skill links (per-directory).
+`wavebid-a2o/.claude/` tree — invisible to `git`, destroyed by `git clean -xfd`, and (the
+skills) undiscoverable by omp because of their nesting depth. This kit fixes all three:
+real git history, cwd-independent deploys, and a flat skill layout.
