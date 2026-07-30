@@ -6,7 +6,7 @@ description: Plain-language brief of what a ticket/branch changes — verdict, b
 
 **Purpose:** Answer “what am I about to merge?” in plain language — ticket intent, what changed, concrete before/after examples, and what to watch for. Use when you do not want to merge (or review) something you do not understand.
 
-**Not this command:** Not a code review (`/atg:review-codebase`), not a lifecycle dashboard (`/atg:story-view`), not a branch/CI status table (`/atg:status`).
+**Not this command:** Not a code review (`/atg:pattern-check`), not a lifecycle dashboard (`/atg:story-view`), not a branch/CI status table (`/atg:status`).
 
 **Read-only:** Never commits, never posts to Jira, never runs Gradle, never creates or updates PRs. Chat output only — do not write story artifacts unless the user explicitly asks.
 

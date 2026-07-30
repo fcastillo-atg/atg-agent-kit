@@ -2,15 +2,15 @@
 description: Cross-reference the PR diff against existing codebase patterns and project rules to catch antipatterns before shipping
 ---
 
-# Review Codebase: Pattern & Convention Cross-Reference
+# Pattern Check: Diff vs Existing Code & Rules
 
 **Purpose:** After `/atg:verify` passes, check the diff against **(1)** how similar code is already implemented elsewhere in the codebase and **(2)** the numbered rule docs in `wavebid-a2o-service/.claude/rules/`. Surfaces likely antipatterns and inconsistencies before `/atg:story-gap` and `/atg:ship`. **Advisory only — never blocks shipping.**
 
 ## Usage
 
 ```bash
-/atg:review-codebase {TICKET}              # check current branch against main
-/atg:review-codebase {TICKET} --branch N  # scope check to branch N's changes only
+/atg:pattern-check {TICKET}              # check current branch against main
+/atg:pattern-check {TICKET} --branch N  # scope check to branch N's changes only
 ```
 
 ## Arguments
@@ -86,7 +86,7 @@ For each shape found in Step 2, find comparable existing implementations **outsi
 ### Step 5: Output findings table
 
 ```
-Codebase Review — {TICKET}
+Pattern Check — {TICKET}
 Diff: origin/main...HEAD ({N} files changed, {M} test files excluded)
 
 | File | Shape | Compared against | Divergence | Severity | Suggested action |
@@ -101,7 +101,7 @@ Diff: origin/main...HEAD ({N} files changed, {M} test files excluded)
 ### Step 6: Verdict (advisory — never blocks)
 
 ```
-📋 Codebase review complete — {K} finding(s) to consider ({H} high, {M2} medium, {L} low).
+📋 Pattern check complete — {K} finding(s) to consider ({H} high, {M2} medium, {L} low).
 
 This is advisory: use judgment on which findings are worth addressing before shipping.
 
@@ -111,7 +111,7 @@ Proceed to: /atg:story-gap {TICKET} [--branch N]
 If there are zero findings:
 
 ```
-✅ Codebase review — no divergences from existing patterns or rules found.
+✅ Pattern check — no divergences from existing patterns or rules found.
 
 Proceed to: /atg:story-gap {TICKET} [--branch N]
 ```

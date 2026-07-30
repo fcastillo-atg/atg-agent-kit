@@ -16,7 +16,7 @@ This namespace contains project-specific commands for the wavebid-a2o-service Sp
 | | `/atg:feature-flag` | If user-facing change | `*FeatureFlag.kt` + wired service |
 | | *code the branch* | | — |
 | | `/atg:verify` | Always (loop until green) | Green quality gates |
-| | `/atg:review-codebase` | Recommended (advisory) | Findings table — antipatterns vs. existing code + rules |
+| | `/atg:pattern-check` | Recommended (advisory) | Findings table — antipatterns vs. existing code + rules |
 | | `/atg:changeset` | If `service/` or `ui/` changed | `.changeset/*.md` on branch |
 | | `/atg:story-gap` | Always (gates ship) | AC coverage table |
 | | *fill `## As-built`* | **Last branch only** | Plan updated with final shipped state |
@@ -30,7 +30,7 @@ This namespace contains project-specific commands for the wavebid-a2o-service Sp
 | **Anytime** | `/atg:status` | On-demand | Branch state + CI + Jira snapshot |
 | | `/atg:story-view` | On-demand | Read-only visual dashboard (Artifact link) of a story's full lifecycle position |
 | | `/atg:explain` | On-demand | Plain-language “what am I merging?” brief with before/after examples |
-| **Shortcut** | `/atg:story-auto-run` | Optional, one branch at a time | Chains brief → story-plan → story-impl → (feature-flag) → verify → review-codebase → (changeset) → story-gap → (As-built, last branch) → testing-doc (last branch); stops at a hard blocker; never runs `ship` or `qa-comment` |
+| **Shortcut** | `/atg:story-auto-run` | Optional, one branch at a time | Chains brief → story-plan → story-impl → (feature-flag) → verify → pattern-check → (changeset) → story-gap → (As-built, last branch) → testing-doc (last branch); stops at a hard blocker; never runs `ship` or `qa-comment` |
 
 ---
 
@@ -69,7 +69,7 @@ This namespace contains project-specific commands for the wavebid-a2o-service Sp
 │    ├─ ./gradlew codenarcTest                                               │
 │    └─ ./gradlew koverVerify  (≥85% branch, ≥95% line)                    │
 │                              ↓                                             │
-│  /atg:review-codebase [--branch N]        ← advisory, never blocks       │
+│  /atg:pattern-check [--branch N]        ← advisory, never blocks       │
 │    ├─ rules pass: diff vs. .claude/rules/*.md                             │
 │    └─ codebase pass: diff vs. 2-3 comparable existing implementations    │
 │                              ↓                                             │
@@ -153,7 +153,7 @@ flowchart TD
     IMPL --> FLAG["/atg:feature-flag"]
     IMPL -.->|no flag needed| VERIFY
     FLAG --> VERIFY["/atg:verify"]
-    VERIFY --> REVIEWCODE["/atg:review-codebase"]
+    VERIFY --> REVIEWCODE["/atg:pattern-check"]
     REVIEWCODE --> CHANGESET["/atg:changeset"]
     CHANGESET --> GAP["/atg:story-gap"]
     GAP --> SHIP["/atg:ship"]
@@ -360,13 +360,13 @@ Runs comprehensive quality verification after code changes.
 
 ---
 
-### `/atg:review-codebase`
+### `/atg:pattern-check`
 Cross-references the diff against existing codebase patterns and project rule docs to catch antipatterns before shipping. **Advisory only — never blocks.**
 
 **Usage:**
 ```bash
-/atg:review-codebase WBPR-4032
-/atg:review-codebase WBPR-4032 --branch 2
+/atg:pattern-check WBPR-4032
+/atg:pattern-check WBPR-4032 --branch 2
 ```
 
 **What it does:**
@@ -547,7 +547,7 @@ Shortcut that chains most of the per-branch lifecycle into one command. **Fully 
 - feature-flag, if the plan calls for one on this branch and it doesn't exist yet
 - story-impl (implementation only — never lets story-impl's own checklist trigger verify/story-gap/ship)
 - verify (its own auto-fix loop) — stops here if it doesn't converge
-- review-codebase (advisory, never blocks)
+- pattern-check (advisory, never blocks)
 - changeset, if the diff is in scope and none exists yet — **auto-picks the bump type without asking** and flags it in the final report for confirmation before merge
 - story-gap — stops here if any AC is ❌ Missing
 - As-built fill + testing-doc, **last branch only**
@@ -569,7 +569,7 @@ Read-only visual dashboard for a single story — renders its full lifecycle pos
 **What it does:**
 - Reads `implementation-plan.md` (Pre-Analysis, Branch strategy, As-built), `{TICKET}-story.md`, and the `testing/` files for static state
 - Reads git branch existence + `gh pr` state/CI checks per branch, and Jira status via the `jira-cli` skill, for live state
-- Applies a fixed status-inference table per lifecycle step — steps with no persisted result (`review-codebase`, `story-gap`) always show "unknown, re-run to confirm" rather than a guess
+- Applies a fixed status-inference table per lifecycle step — steps with no persisted result (`pattern-check`, `story-gap`) always show "unknown, re-run to confirm" rather than a guess
 - Every step with real content is clickable — expands inline to show the full underlying detail (the plan doc, testing guide, CI check list, PR description, changeset content, etc.), reformatted to match the page
 - Publishes a self-contained HTML snapshot via the Artifact tool; re-running updates the same link
 - Falls back to a minimal "not yet planned" page if no story directory exists yet for the ticket

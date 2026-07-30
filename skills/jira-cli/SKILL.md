@@ -86,8 +86,31 @@ Use the **exact** status name from the ATG Jira workflow (`Code Review`, not `co
 Always write the body to a file first — QA comments are multi-line Postman-format text with
 `{{variables}}`; inline `--body` is subject to shell-escaping mangling.
 
+**If the comment uses any Markdown formatting** (`##` headings, `**bold**`, `` `code` ``, tables,
+fenced code blocks, links), it **must be converted to Atlassian Document Format (ADF) JSON**
+before posting. `acli comment create --help` confirms `--body-file` only accepts "plain text or
+Atlassian Document Format (ADF)" — there is no Markdown option, and Jira Cloud dropped wiki-markup
+rendering for comments. Posting a `.md` file directly succeeds with no error but renders the raw
+`**`/`` ` ``/`##`/`|...|` characters as literal text in the Jira UI.
+
+Convert first, using a small scoped Python converter (headings, paragraphs with bold/code/link
+marks, bullet lists, tables, fenced code blocks, and rules cover nearly all QA-comment content —
+no need for a generic Markdown library), then post the resulting `.json`:
+
 ```bash
-acli jira workitem comment create --key {TICKET} --body-file /path/to/comment.md
+acli jira workitem comment create --key {TICKET} --body-file /path/to/comment.adf.json
+```
+
+**Verify** by re-fetching: `acli jira workitem comment list --key {TICKET} --json` and confirming
+the flattened text has no stray `**`/`` ` ``/`##` characters — their absence means Jira parsed
+real marks rather than displaying raw syntax.
+
+If a comment was already posted with broken (literal-Markdown) formatting, fix it in place with
+`--edit-last` (edits the last comment from the same author) rather than leaving the broken one and
+posting a duplicate:
+
+```bash
+acli jira workitem comment create --key {TICKET} --body-file /path/to/comment.adf.json --edit-last
 ```
 
 ## Fallback to MCP
