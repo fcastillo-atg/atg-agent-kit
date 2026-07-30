@@ -4,7 +4,7 @@ description: Render a story's current lifecycle position (brief → ship → doc
 
 # Story View: Visual Lifecycle Dashboard
 
-**Purpose:** Show where `{TICKET}` stands across the full `/atg:*` lifecycle — brief, plan, per-branch impl/verify/gap/ship, docs, retro — as a single visual page. **Read-only in every sense**: never runs Gradle, never posts to Jira, never pushes or creates PRs, never re-invokes `/atg:verify`, `/atg:review-codebase`, or `/atg:story-gap`. Each run is a fresh snapshot published to the same URL — there are no buttons on the page that trigger anything.
+**Purpose:** Show where `{TICKET}` stands across the full `/atg:*` lifecycle — brief, plan, per-branch impl/verify/gap/ship, docs, retro — as a single visual page. **Read-only in every sense**: never runs Gradle, never posts to Jira, never pushes or creates PRs, never re-invokes `/atg:verify`, `/atg:pattern-check`, or `/atg:story-gap`. Each run is a fresh snapshot published to the same URL — there are no buttons on the page that trigger anything.
 
 ## Usage
 
@@ -86,7 +86,7 @@ Skip Steps 2–6, 8 entirely; go straight to Step 9 with this minimal content.
 | Story Impl *(per branch)* | branch exists, commits ahead of main | branch exists, 0 commits yet | branch doesn't exist |
 | Feature Flag | matching `*FeatureFlag.kt` found via `grep -rl` in `src/main/kotlin` | — | plan's `## Feature flag` section is non-empty but no match found |
 | Verify | PR exists, all CI checks green | PR exists, checks pending/red | no PR yet — "not yet run, or run `/atg:verify` to check" |
-| Review-codebase | *(never inferred)* | | always "○ run manually if you want this — advisory, not persisted" |
+| Pattern-check | *(never inferred)* | | always "○ run manually if you want this — advisory, not persisted" |
 | Changeset | matching `.changeset/*.md` found via `git diff origin/main...{branch-name} --name-only \| grep '^\.changeset/'` | | missing, but diff touches `wavebid-a2o-service/` or `wavebid-a2o-ui/` → "⚠ likely needed" |
 | Story Gap | *(never inferred)* | | "○ last run: unknown — re-run to confirm," unless `## As-built` explicitly states AC coverage |
 | Ship | PR merged | PR open | no PR |
@@ -111,7 +111,7 @@ For multi-branch stories, nest the **Story Impl → Ship** rows per branch under
 
 ### Step 8b: Gather deep-info content per step (for expandable panels)
 
-For every row that will render as expandable (anything not `○ Not started`, and excluding Review-codebase/Story Gap which are never expandable), additionally gather:
+For every row that will render as expandable (anything not `○ Not started`, and excluding Pattern-check/Story Gap which are never expandable), additionally gather:
 
 | Step | Content to fetch |
 |---|---|
@@ -131,7 +131,7 @@ Every fetch in this table is independent — if one fails (file unreadable, `gh`
 
 ### Step 9: Render and publish
 
-Build a single self-contained HTML page (inline CSS, no external requests — per the Artifact tool's constraints) using the vertical-timeline layout. Every row with content gathered in Step 8b becomes an expandable accordion (`<details>`/`<summary>` or equivalent inline toggle — click to expand in place, click again to collapse, multiple open at once, no page navigation). Rows with no Step 8b content (`○ Not started`, or the never-expandable Review-codebase/Story Gap) render as plain static rows: no chevron, no hover state, default cursor.
+Build a single self-contained HTML page (inline CSS, no external requests — per the Artifact tool's constraints) using the vertical-timeline layout. Every row with content gathered in Step 8b becomes an expandable accordion (`<details>`/`<summary>` or equivalent inline toggle — click to expand in place, click again to collapse, multiple open at once, no page navigation). Rows with no Step 8b content (`○ Not started`, or the never-expandable Pattern-check/Story Gap) render as plain static rows: no chevron, no hover state, default cursor.
 
 ```
 {TICKET} — {title from story.md or plan}

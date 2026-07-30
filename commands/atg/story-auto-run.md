@@ -1,5 +1,5 @@
 ---
-description: Chain brief → story-plan → story-impl → (feature-flag) → verify → review-codebase → (changeset) → story-gap → testing-doc for one branch, fully autonomous, stopping only at a hard blocker. ship and qa-comment stay manual.
+description: Chain brief → story-plan → story-impl → (feature-flag) → verify → pattern-check → (changeset) → story-gap → testing-doc for one branch, fully autonomous, stopping only at a hard blocker. ship and qa-comment stay manual.
 ---
 
 # Story Auto-Run: Chained Implementation (One Branch)
@@ -23,7 +23,7 @@ description: Chain brief → story-plan → story-impl → (feature-flag) → ve
 - `{TICKET}` — Jira ticket key (e.g. `WBPR-4032`)
 - `--branch N` — which plan branch to execute (default: inferred from current branch name `fc/{TICKET}-*`, else `1`)
 - `--skip-brief` — bypass `/atg:brief` even when no plan exists yet
-- `--from STEP` — resume starting at `STEP`, skipping everything before it. `STEP` ∈ `{brief, story-plan, feature-flag, story-impl, verify, review-codebase, changeset, story-gap, testing-doc}`
+- `--from STEP` — resume starting at `STEP`, skipping everything before it. `STEP` ∈ `{brief, story-plan, feature-flag, story-impl, verify, pattern-check, changeset, story-gap, testing-doc}`
 - `--with-scenarios` — passthrough to `/atg:testing-doc`'s own flag
 
 ## Resume contract (read this before re-running)
@@ -62,7 +62,7 @@ If no feature flag applies to this branch, skip silently — do not mention it i
 
 Run `/atg:story-impl {TICKET} --branch N`.
 
-**Critical boundary:** story-impl here does **implementation only** — production code + tests from the work queue's "Implementation" section, including wiring an already-scaffolded feature flag (Step 3) into services/controllers, but **not** regenerating the flag file itself. story-impl's own doc says to "implement every item in the checklist in order," which is ambiguous about whether that includes the checklist's **Verification** section (`/atg:verify`, `/atg:story-gap`, `/atg:ship`). **When invoked from this chain, treat that Verification section as informational only — do not act on any of those items here.** `story-auto-run` owns invoking verify/review-codebase/changeset/story-gap/as-built as its own separate steps below, in order, exactly once. `/atg:ship` must never fire as a side effect of this chain, full stop.
+**Critical boundary:** story-impl here does **implementation only** — production code + tests from the work queue's "Implementation" section, including wiring an already-scaffolded feature flag (Step 3) into services/controllers, but **not** regenerating the flag file itself. story-impl's own doc says to "implement every item in the checklist in order," which is ambiguous about whether that includes the checklist's **Verification** section (`/atg:verify`, `/atg:story-gap`, `/atg:ship`). **When invoked from this chain, treat that Verification section as informational only — do not act on any of those items here.** `story-auto-run` owns invoking verify/pattern-check/changeset/story-gap/as-built as its own separate steps below, in order, exactly once. `/atg:ship` must never fire as a side effect of this chain, full stop.
 
 ### Step 5: Verify (skip if `--from` is past `verify`)
 
@@ -71,9 +71,9 @@ Run `/atg:verify`. It has its own internal max-3-cycles auto-fix loop per gate (
 - **Converges** (all gates green): continue to Step 6.
 - **Does not converge** after its own retry cap: **STOP.** Report which gate failed and why. Tell the user to fix manually, then resume with `/atg:story-auto-run {TICKET} --branch N --from verify`.
 
-### Step 6: Review-codebase (skip if `--from` is past `review-codebase`)
+### Step 6: Pattern-check (skip if `--from` is past `pattern-check`)
 
-Run `/atg:review-codebase {TICKET} --branch N`. Advisory only, per its own doc — **never blocks**. Include findings in the final report; continue regardless.
+Run `/atg:pattern-check {TICKET} --branch N`. Advisory only, per its own doc — **never blocks**. Include findings in the final report; continue regardless.
 
 ### Step 7: Changeset — conditional (skip if `--from` is past `changeset`)
 
@@ -109,7 +109,7 @@ Run `/atg:testing-doc {TICKET}` (append `--with-scenarios` if that flag was pass
 Run `/atg:status {TICKET}` to produce the branch/Jira overview — reuse its existing output rather than inventing a new summary format. Then append, prominently:
 
 - Any assumptions brief logged this run (or "brief skipped — plan already existed")
-- review-codebase finding count (advisory, non-blocking) — link to the findings table above
+- pattern-check finding count (advisory, non-blocking) — link to the findings table above
 - Whether a feature flag was scaffolded this run
 - Whether a changeset was auto-created, with its **auto-picked bump type flagged for confirmation** (or "changeset already existed — left as-is", or "no changeset needed — diff out of scope")
 - story-gap coverage summary
@@ -127,7 +127,7 @@ Run `/atg:status {TICKET}` to produce the branch/Jira overview — reuse its exi
 | Branch mismatch (tree clean) | `git checkout` (create if needed), then proceed |
 | No feature flag needed for this branch | Skip Step 3 silently |
 | `verify` doesn't converge (after its own 3 cycles) | Stop; report; resume via `--from verify` after manual fix |
-| `review-codebase` findings | Never blocks; included in report only |
+| `pattern-check` findings | Never blocks; included in report only |
 | Diff out of changeset scope, or changeset already exists | Skip Step 7 silently / leave existing file alone |
 | `story-gap` finds ❌ Missing AC | Stop; report; resume via `--from verify` after manual fix |
 | Not the last branch | Skip As-built fill + testing-doc; note when they'll run |
