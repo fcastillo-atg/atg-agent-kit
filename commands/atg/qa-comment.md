@@ -34,6 +34,10 @@ find bin/stories -path "*/{TICKET}*/implementation-plan.md" | sort | head -1
 | `testing/TESTING-PROGRESS.md` | Optional | Confirm all scenarios passed (footer note) |
 | `implementation-plan.md` | Optional | Scope / AC deferral notes from `## As-built` |
 
+The directory holding `TESTING-GUIDE.md` (`bin/stories/{year}/{month}/{TICKET}-*/testing/`) is this
+command's **output** location too — see Step 5. Never write the drafted comment to a scratchpad
+or temp path; it belongs alongside the other testing artifacts for this story.
+
 **Gate:** If `TESTING-GUIDE.md` not found → stop with:
 
 ```
@@ -115,18 +119,37 @@ Build the comment from the template below in this order:
 
 1. Header + environment line
 2. "What was added" (1–2 sentences from `## Overview`)
-3. Prerequisites block (variable list + note to authenticate first)
-4. `---` + **Step 1 — Authenticate** (instruction only — no HTTP block)
-5. `---` + Step 2 (baseline GET) + expected JSON + ✅ line
-6. `---` + one block per scenario + expected JSON + ✅ line
-7. Scope notes (only when guide explicitly flags AC gaps or deferrals)
+3. **AI-disclaimer note** (fixed, verbatim — see below), directly under "What was added"
+4. Prerequisites block (variable list + note to authenticate first)
+5. `---` + **Step 1 — Authenticate** (instruction only — no HTTP block)
+6. `---` + Step 2 (baseline GET) + expected JSON + ✅ line
+7. `---` + one block per scenario + expected JSON + ✅ line
+8. Scope notes (only when guide explicitly flags AC gaps or deferrals)
+
+**AI-disclaimer note** — mandatory, non-negotiable, always included regardless of ticket type
+or scenario count (never paraphrase or drop it):
+
+```
+NOTE: This guide was created with AI; use it as a reference; perform your own validation based on the above ACs.
+```
 
 If `TESTING-PROGRESS.md` exists and all scenarios show `PASS`, append:
 > *Locally verified — all {N} scenarios passed (`TESTING-PROGRESS.md`).*
 
+**Write the assembled comment to disk immediately** — always, including under `--dry-run` —
+next to `TESTING-GUIDE.md`:
+
+```
+bin/stories/{year}/{month}/{TICKET}-*/testing/QA-COMMENT.md
+```
+
+This is the durable copy (multi-line Postman-format text with `{{variables}}` also doesn't
+survive inline shell escaping, so Step 7 reads from this file rather than re-generating one).
+Re-running `/atg:qa-comment {TICKET}` overwrites this file with the latest draft.
+
 ### Step 6: Print draft and wait for approval
 
-Print the full comment, then **stop and prompt**:
+Print the full comment (from the file just written), then **stop and prompt**:
 
 ```
 ───────────────────────────────────────────
@@ -146,11 +169,11 @@ Draft ready. Post this comment to {TICKET}?
 
 ### Step 7: Post + confirm
 
-Resolve per the **jira-cli** skill. Write the comment body to a file first (multi-line Postman-format
-text with `{{variables}}` doesn't survive inline shell escaping), then:
+Resolve per the **jira-cli** skill. Post using the `QA-COMMENT.md` file already written in Step 5
+(same `testing/` directory as `TESTING-GUIDE.md`) — do not re-write it to a scratch or temp path:
 
 ```bash
-acli jira workitem comment create --key {TICKET} --body-file /path/to/comment.md
+acli jira workitem comment create --key {TICKET} --body-file bin/stories/{year}/{month}/{TICKET}-*/testing/QA-COMMENT.md
 ```
 
 Fallback if `acli` is unavailable:
@@ -166,6 +189,7 @@ Print on success:
 
 Environment: {environment line}
 Scenarios:   {N} steps
+Saved:       bin/stories/{year}/{month}/{TICKET}-*/testing/QA-COMMENT.md
 
 Next: /atg:retro {TICKET}
 Note: Run retro now — do not wait for PR merge (retro captures story work, not merge state).
@@ -182,6 +206,8 @@ Note: Run retro now — do not wait for PR merge (retro captures story work, not
 
 **What was added**
 {1-2 sentence summary — "What changed:" from TESTING-GUIDE.md Overview}
+
+NOTE: This guide was created with AI; use it as a reference; perform your own validation based on the above ACs.
 
 **Prerequisites**
 - App deployed to your target env
@@ -257,14 +283,18 @@ Expected response:
 
 ## Design rules
 
-1. **Draft-first, explicit approval** — always print the full comment and wait for `y`; never post silently
-2. **curl with Postman `{{variable}}` placeholders** — define variables once in a Prerequisites environment table; use `{{var}}` inside quoted strings in every `curl` snippet; never use `$VAR`, `export`, `| jq`, or pipe chains
-3. **Authenticate = instruction only** — Step 1 shows the auth `curl` but tells QA to copy the token into their `token` env var; no shell capture
-4. **Always show the complete response body** — never truncate or show key fields only
-5. **Environment line is automatic** — derived from `gh pr list`; not typed manually
-6. **Scope notes are conditional** — only included when the guide explicitly flags AC gaps
-7. **`TESTING-PROGRESS.md` is optional** — command works even if `/atg:test-run` was skipped
-8. **One `---` divider per step** — Jira renders `---` as `<hr>`; improves readability in the ticket
+1. **AI-disclaimer note is mandatory, non-negotiable** — always included verbatim under "What was
+   added", regardless of ticket type or scenario count; never paraphrase or drop it
+2. **Draft-first, explicit approval** — always print the full comment and wait for `y`; never post silently
+3. **curl with Postman `{{variable}}` placeholders** — define variables once in a Prerequisites environment table; use `{{var}}` inside quoted strings in every `curl` snippet; never use `$VAR`, `export`, `| jq`, or pipe chains
+4. **Authenticate = instruction only** — Step 1 shows the auth `curl` but tells QA to copy the token into their `token` env var; no shell capture
+5. **Always show the complete response body** — never truncate or show key fields only
+6. **Environment line is automatic** — derived from `gh pr list`; not typed manually
+7. **Scope notes are conditional** — only included when the guide explicitly flags AC gaps
+8. **`TESTING-PROGRESS.md` is optional** — command works even if `/atg:test-run` was skipped
+9. **One `---` divider per step** — Jira renders `---` as `<hr>`; improves readability in the ticket
+10. **Output always lands in `testing/QA-COMMENT.md`** — never a scratchpad or temp path; this holds
+    even for `--dry-run`, so the draft is reviewable/diffable and survives the session
 
 ## Next steps (after posting)
 
