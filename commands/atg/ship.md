@@ -170,6 +170,21 @@ Skip entirely for pure refactors, test-only, infra, or internal renames with no 
 
 Prefer examples from the story or As-built over inventing large edge matrices.}
 
+### Request / response
+
+{Include this subsection when there is a concrete data shape worth showing verbatim to reviewers even without an old-vs-new contrast — e.g. a persist-only change where the wire contract is unchanged but a new DB/internal shape is the real deliverable, or a new endpoint. This is a distinct convention from Before/After (see [PR #3380](https://github.com/wavebid-ATG/wavebid-a2o/pull/3380) for the canonical example) — use it instead of, or alongside, Before/After when "old vs new for the same field" doesn't fit but a shape still needs to be shown concretely.
+
+Use real payloads captured during `/atg:test-run` (or the story's TESTING-GUIDE/TESTING-PROGRESS) — never fabricate examples.
+
+Format, matching PR #3380:
+- `### Request / response` (h3) as the section heading.
+- One `#### \`METHOD path\`` (h4, backtick-wrapped) per HTTP endpoint shown, or a plain descriptive `####` label for a non-wire shape (e.g. `#### Persisted result row (not yet exposed on the wire)`).
+- A fenced ` ```json ` block with a real example under each heading.
+- A short prose line noting invariants (e.g. `totalCount = syncedCount + pendingCount`) or explicitly stating the contract is unchanged and shown for reference.
+- Inline-code status codes, field names; enum values as pipe-separated inline code (e.g. `PENDING` \| `IN_PROGRESS`).
+
+Skip entirely when there is no shape worth showing (pure refactors, test-only, infra, internal renames).}
+
 ## Behavior change to flag for reviewers
 
 {Include this heading **only** when As-built / Pre-Analysis documents an intentional behavior delta (e.g. Clear → no-op). Keep it short; do not duplicate the Before/After hero table here.
@@ -266,6 +281,7 @@ Status:   {Draft PR — Jira stays In Development | Code Review (transitioned vi
 - If `implementation-plan.md` is missing or has no `### Branch N:` for this slice, generate a concise summary from the diff instead.
 - **Before / After** (when included) must highlight the **new capability**; put regressions / edge semantics under **Behavior change to flag for reviewers**, not as the primary table.
 - Prefer story / As-built examples over inventing edge matrices. Omit Before/After and Behavior change headings when they do not apply.
+- **Request / response** (when included) uses real payloads captured from a test run, never fabricated examples; omit it when there is no concrete shape worth showing.
 
 ## Error Handling
 
