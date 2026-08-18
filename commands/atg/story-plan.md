@@ -526,32 +526,68 @@ Your output must include:
 10. **Summary Table** (from Step 9)
 
 **Write to files:**
-- `bin/stories/{year}/{month}/{TICKET}-{slug}/{TICKET}-story.md` — When missing or when refreshing from Jira (Step 1); snapshot of Jira description and acceptance criteria; include **## Jira comments (summary)** when comments were fetched
-- `bin/stories/{year}/{month}/{TICKET}-{slug}/implementation-plan.md` — **Single canonical plan file** (see **Canonical structure** below). Do **not** create `branch-strategy.md` for new work.
-- `wavebid-a2o-service/.claude/plans/{TICKET}-{slug}.md` — **Required.** Concise Claude-facing plan stub written/updated on every `/atg:story-plan` run (create if missing; overwrite if stale). Points at the canonical `bin/stories/.../implementation-plan.md`. Path is `.claude/plans` under the service (not monorepo-root `.cursor/plans/`, and not `claude/plans`).
 
-**Required `.claude/plans` stub** (keep short — summary, not a second full plan):
+Two locations, with **different audiences and different git treatment**. Both are required.
+
+| File | Audience | Git |
+|---|---|---|
+| `bin/stories/{year}/{month}/{TICKET}-{slug}/{TICKET}-story.md` | You, this session | **Never commit** |
+| `bin/stories/{year}/{month}/{TICKET}-{slug}/implementation-plan.md` | You, this session | **Never commit** |
+| `wavebid-a2o-service/.claude/plans/{TICKET}-{slug}.md` | The team + future Claude sessions | **Committed to the repo** |
+
+- `bin/stories/.../{TICKET}-story.md` — When missing or when refreshing from Jira (Step 1); snapshot of Jira description and acceptance criteria; include **## Jira comments (summary)** when comments were fetched
+- `bin/stories/.../implementation-plan.md` — **Single canonical plan file** (see **Canonical structure** below). Do **not** create `branch-strategy.md` for new work.
+- `wavebid-a2o-service/.claude/plans/{TICKET}-{slug}.md` — **Required. The small, repo-committed plan** (see **Repo plan file** below).
+
+**⚠️ `bin/` is local scratch, never repo content.** Do **not** `git add` or `git commit` anything under `bin/` — not the story snapshot, not `implementation-plan.md`. It is gitignored under `wavebid-a2o-service/` but **not** at the monorepo root, so the rule is behavioural, not enforced by `.gitignore`. The repo-visible artifact is the `.claude/plans/` file below, and only that.
+
+### Repo plan file: `wavebid-a2o-service/.claude/plans/{TICKET}-{slug}.md`
+
+**Always write this**, in addition to `implementation-plan.md`: create if missing, overwrite if
+stale. Path resolves relative to `wavebid-a2o-service/`, **not** the monorepo root —
+`.cursor/plans/` at the root is a Cursor convention; `.claude/plans/` under the service is what
+Claude Code loads as context in future sessions. Read the two or three most recent files already
+in that directory and match their shape before writing.
+
+This is a **condensed** plan (target **~100 lines / under 5K**), not a copy of
+`implementation-plan.md`. It links back to the full plan rather than repeating it:
 
 ```markdown
 # {TICKET}: {short title}
 
 Full plan: `bin/stories/{year}/{month}/{TICKET}-{slug}/implementation-plan.md`
 
+Story snapshot: `bin/stories/{year}/{month}/{TICKET}-{slug}/{TICKET}-story.md`
+
 ## Summary
-- [1–6 bullets: what changes / what is out of scope]
+{3–6 bullets: what changes and why. Name what is explicitly out of scope and which ticket owns it.}
+{One line on feature flag / migration / event: needed or not.}
 
 ## Branch
-`fc/{TICKET}-{slug}` (or list branches if multi-branch)
+`fc/{TICKET}-{slug}` (~XXX LOC, **N branch(es)**)
 
-## Decisions
-- [Locked brief/story-plan decisions]
+## Decisions (brief + story-plan)
+{Numbered. Every choice a reviewer might question, with the reason. Where the ticket was ambiguous
+or self-contradictory, say which reading you took and why. Note which decisions are cheap to
+reverse.}
 
-## Files
-- [Planned production/test/changeset paths]
+## Risks (carry into PR description)
+{Omit if genuinely none. Anything non-additive, any inferred contract decision, any invariant that
+does not hold the way a reader would assume.}
+
+## Files (planned)
+{Bullet list of paths. Close with an explicit "do not touch X — {ticket} owns it" when a sibling
+ticket owns adjacent code.}
 
 ## Status
-Planned. Ready for `/atg:story-impl {TICKET}`.
+{Planned / Implemented on {branch} / Merged. Then: Next: `/atg:...` → `/atg:...`}
 ```
+
+**Commit:** this file belongs in the repo, but commit it on the **implementation branch** (the
+`fc/{TICKET}-{slug}` branch from `## Branch strategy`), not on whatever branch story-plan happened
+to run from. `/atg:story-impl` creates or switches to that branch, so the normal flow is to leave
+the file uncommitted here and let it land as part of the implementation branch's first commit.
+Do not commit it to `main`, and do not push it on its own.
 
 **Canonical structure** (write `implementation-plan.md` using these headings so `/atg:story-impl` can find branch slices):
 
@@ -615,9 +651,10 @@ Before delivering the plan:
 - [ ] Rollback strategy defined
 - [ ] Summary table complete
 - [ ] Single `implementation-plan.md` produced with `## Branch strategy` (and `### Branch N:`) when multi-branch; no new `branch-strategy.md`
-- [ ] `wavebid-a2o-service/.claude/plans/{TICKET}-{slug}.md` written/updated (**Required** stub; links to canonical `implementation-plan.md`)
 - [ ] `## As-built` section present in `implementation-plan.md` (filled after implementation, or placeholder comment if still in-progress)
 - [ ] `## Next ATG command` is the **final** section of `implementation-plan.md` (replaces any brief-only footer) and matches the chat handoff
+- [ ] **`wavebid-a2o-service/.claude/plans/{TICKET}-{slug}.md` written** — condensed (~100 lines), links back to the full plan, matches the shape of the most recent existing files in that directory
+- [ ] **Nothing under `bin/` was `git add`ed or committed** — the `.claude/plans/` file is the only repo-visible artifact, and it is left for the implementation branch to commit
 
 ## Example Scenarios
 

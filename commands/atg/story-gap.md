@@ -154,4 +154,5 @@ Blocked: do NOT ship until missing ACs are addressed.
 
 1. Fix any Missing ACs, re-run `/atg:verify`
 2. Re-run `/atg:story-gap {TICKET}` to refresh the coverage table
-3. When all ACs are ✅ or ⚠️: `/atg:ship {TICKET} --branch {N}`
+3. When all ACs are ✅ or ⚠️ and this is the last (or only) branch: `/atg:testing-doc {TICKET}`
+4. `/atg:ship {TICKET} --branch {N}`
