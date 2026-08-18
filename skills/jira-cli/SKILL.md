@@ -18,24 +18,34 @@ Do not duplicate this fallback tree in each command file — commands should jus
 
 ## Auth
 
-Auth is token-based against the ATG site and does not need a per-command `acli auth switch` —
-`acli` resolves the ATG session automatically for `WBPR-*`/`SP2-*` keys. Verify with:
+Prefer an existing ATG session. If `acli` is on the wrong site (e.g. a personal
+OAuth account) for `WBPR-*`/`SP2-*` keys, **switch** — do not re-login:
 
 ```bash
+acli jira auth switch \
+  --site auctiontechnologygroup.atlassian.net \
+  --email franklincastillo@auctiontechnologygroup.com
+```
+
+Interactive: `acli jira auth switch`. Verify with:
+
+```bash
+acli jira auth status
 acli jira workitem view WBPR-4570 --fields status
 ```
 
-If that returns the wrong site's data (e.g. an unrelated ticket, or a "not found" for a real
-key), re-auth explicitly:
+Only if the ATG account is missing entirely, login with the token (never echo it):
 
 ```bash
-echo "$ATG_JIRA_TOKEN" | acli jira auth login \
+printf '%s' "$ATG_JIRA_TOKEN" | acli jira auth login \
   --site auctiontechnologygroup.atlassian.net \
   --email franklincastillo@auctiontechnologygroup.com \
   --token
 ```
 
 `ATG_JIRA_TOKEN` is the same token already configured for the `mcp-atlassian` server in `.mcp.json`.
+Check presence with `${ATG_JIRA_TOKEN:+yes}` only — never `${ATG_JIRA_TOKEN:-…}` (that prints the value).
+
 
 ## Token-efficiency rule
 

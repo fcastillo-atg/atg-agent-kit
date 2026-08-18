@@ -29,7 +29,7 @@ This namespace contains project-specific commands for the wavebid-a2o-service Sp
 | **Post-merge** | `/atg:retro` | After all PRs merged | Patterns appended to `CLAUDE.md` |
 | **Anytime** | `/atg:status` | On-demand | Branch state + CI + Jira snapshot |
 | | `/atg:story-view` | On-demand | Read-only visual dashboard (Artifact link) of a story's full lifecycle position |
-| | `/atg:explain` | On-demand | Plain-language “what am I merging?” brief with before/after examples |
+| | `/atg:explain` | On-demand | Plain-language “what am I merging?” brief with before/after examples; writes `EXPLAIN.md` under the story dir when it exists |
 | **Shortcut** | `/atg:story-auto-run` | Optional, one branch at a time | Chains brief → story-plan → story-impl → (feature-flag) → verify → pattern-check → (changeset) → story-gap → (As-built, last branch) → testing-doc (last branch); stops at a hard blocker; never runs `ship` or `qa-comment` |
 
 ---
@@ -452,7 +452,7 @@ Unified PR comment classifier and resolver — human reviewers and bot comments 
 - Fetches all PR comments (inline review, timeline, bot)
 - Builds a **review matrix** (table): author, location, valid?, proposed fix or draft reply
 - **Stops** for confirmation before applying code fixes (unless `--apply-fixes`)
-- Applies fixes for ✅ fix rows (Kotlin/Spock conventions), then **suggests** [`/local/atg/verify`](verify.md) (full test → Detekt → CodeNarc → Kover; Liquibase preflight when changelogs change) — same as `/atg:verify`
+- Applies fixes for ✅ fix rows (Kotlin/Spock conventions), then **suggests** [`/atg:verify`](verify.md) (full test → Detekt → CodeNarc → Kover; Liquibase preflight when changelogs change)
 - **Asks** before posting replies on GitHub; posts **each** reply **in-thread** (`POST .../pulls/{n}/comments/{id}/replies` or issue-comment `replies`) — never one bundled PR summary comment
 - **Asks** before commit/push (unless `--push`); verify should be green first
 
@@ -489,7 +489,7 @@ Progress: 1/3 branches merged
 ---
 
 ### `/atg:explain`
-Plain-language “what am I merging?” brief — ticket intent, light tech surfaces, before/after examples, behavior matrix, merge confidence. Read-only.
+Plain-language “what am I merging?” brief — ticket intent, light tech surfaces, before/after examples, behavior matrix, merge confidence. Writes `EXPLAIN.md` under an existing story folder; never commits, never posts to Jira.
 
 **Usage:**
 ```bash
@@ -509,6 +509,7 @@ Plain-language “what am I merging?” brief — ticket intent, light tech surf
 - Classifies the change surface (CSV / API / UI / schema) and invents examples from **real symbols in the code**
 - Calls out intentional behavior changes (e.g. Clear-on-blank → no-op)
 - Responds in the user’s language; never dumps raw `git diff`, never commits or posts to Jira
+- **Writes** `bin/stories/{year}/{month}/{TICKET}-{slug}/EXPLAIN.md` when that story directory already exists (overwrites prior brief; does not create the story folder)
 
 ---
 

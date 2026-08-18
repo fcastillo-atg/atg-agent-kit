@@ -528,6 +528,30 @@ Your output must include:
 **Write to files:**
 - `bin/stories/{year}/{month}/{TICKET}-{slug}/{TICKET}-story.md` — When missing or when refreshing from Jira (Step 1); snapshot of Jira description and acceptance criteria; include **## Jira comments (summary)** when comments were fetched
 - `bin/stories/{year}/{month}/{TICKET}-{slug}/implementation-plan.md` — **Single canonical plan file** (see **Canonical structure** below). Do **not** create `branch-strategy.md` for new work.
+- `wavebid-a2o-service/.claude/plans/{TICKET}-{slug}.md` — **Required.** Concise Claude-facing plan stub written/updated on every `/atg:story-plan` run (create if missing; overwrite if stale). Points at the canonical `bin/stories/.../implementation-plan.md`. Path is `.claude/plans` under the service (not monorepo-root `.cursor/plans/`, and not `claude/plans`).
+
+**Required `.claude/plans` stub** (keep short — summary, not a second full plan):
+
+```markdown
+# {TICKET}: {short title}
+
+Full plan: `bin/stories/{year}/{month}/{TICKET}-{slug}/implementation-plan.md`
+
+## Summary
+- [1–6 bullets: what changes / what is out of scope]
+
+## Branch
+`fc/{TICKET}-{slug}` (or list branches if multi-branch)
+
+## Decisions
+- [Locked brief/story-plan decisions]
+
+## Files
+- [Planned production/test/changeset paths]
+
+## Status
+Planned. Ready for `/atg:story-impl {TICKET}`.
+```
 
 **Canonical structure** (write `implementation-plan.md` using these headings so `/atg:story-impl` can find branch slices):
 
@@ -591,6 +615,7 @@ Before delivering the plan:
 - [ ] Rollback strategy defined
 - [ ] Summary table complete
 - [ ] Single `implementation-plan.md` produced with `## Branch strategy` (and `### Branch N:`) when multi-branch; no new `branch-strategy.md`
+- [ ] `wavebid-a2o-service/.claude/plans/{TICKET}-{slug}.md` written/updated (**Required** stub; links to canonical `implementation-plan.md`)
 - [ ] `## As-built` section present in `implementation-plan.md` (filled after implementation, or placeholder comment if still in-progress)
 - [ ] `## Next ATG command` is the **final** section of `implementation-plan.md` (replaces any brief-only footer) and matches the chat handoff
 
