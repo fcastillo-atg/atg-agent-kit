@@ -372,5 +372,5 @@ When this command is invoked:
 ## Next Steps
 
 1. Review generated docs in `bin/stories/{year}/{month}/{TICKET}-{slug}/testing/TESTING-GUIDE.md`
-2. Run curl scripts in `testing/scenarios/` (if `--with-scenarios` was used) — set variables at the top, then `bash scenario-N-*.sh`
-3. Run `/atg:verify` before shipping
+2. `/atg:test-run {TICKET}` — mechanically execute the guide's scenarios against a running environment (or run curl scripts in `testing/scenarios/` by hand if `--with-scenarios` was used: set variables at the top, then `bash scenario-N-*.sh`)
+3. `/atg:ship {TICKET} [--branch N]` — open the PR once the guide (and any manual/`test-run` pass) looks good

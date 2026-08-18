@@ -76,6 +76,27 @@ If the user agrees, draft and write `## As-built` from the current diff before p
 If the user declines, note it in the PR summary block (Step 7) as a follow-up item.
 If `implementation-plan.md` is not found, skip this check silently.
 
+**Testing-doc check (last branch only):**
+
+If this is the **last branch** (N == M) or a **single-branch story** (M == 1), check whether
+`bin/stories/{year}/{month}/{TICKET}-{slug}/testing/TESTING-GUIDE.md` exists.
+
+- **If present:** proceed.
+- **If missing:** warn before continuing:
+
+```
+⚠️  This is the last branch for {TICKET} — no TESTING-GUIDE.md found.
+
+    /atg:testing-doc {TICKET} generates the curl-based testing guide QA uses
+    via /atg:qa-comment and /atg:test-run. Generating it now, before the PR
+    is open, keeps it in sync with what actually shipped.
+
+    Run /atg:testing-doc {TICKET} now? (Recommended)
+```
+
+If the user agrees, run `/atg:testing-doc {TICKET}` before proceeding to Step 4.
+If the user declines, note it in the PR summary block (Step 7) as a follow-up item.
+
 ### Step 4: Determine changed files by layer
 
 ```bash
@@ -339,4 +360,5 @@ Status:   In Development (transition to Code Review when PR is marked ready)
 1. Request reviewers on GitHub
 2. Monitor CI — if it fails: `/atg:review-feedback {PR_NUMBER}`
 3. When reviewer comments arrive: `/atg:review-feedback {PR_NUMBER}`
-4. When PR is approved and merged: start next branch or run `/atg:retro {TICKET}`
+4. If the testing-doc check above was declined: `/atg:testing-doc {TICKET}` before QA needs it
+5. When PR is approved and merged: start next branch or run `/atg:retro {TICKET}`

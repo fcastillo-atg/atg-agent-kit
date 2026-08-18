@@ -404,6 +404,8 @@ Ready to commit!
 ## Next Steps
 
 1. All gates green → commit and push: `git push -u origin {branch}`
-2. Create PR: `/atg:ship {TICKET} [--branch N]`
-3. If tests fail locally that pass in CI: check for flaky tests (seed data, ordering)
-4. When PR is merged: `/atg:retro {TICKET}`
+2. `/atg:story-gap {TICKET}` — confirm AC coverage before opening the PR
+3. On the last (or only) branch: `/atg:testing-doc {TICKET}` — generate `TESTING-GUIDE.md` while the diff is fresh
+4. Create PR: `/atg:ship {TICKET} [--branch N]`
+5. If tests fail locally that pass in CI: check for flaky tests (seed data, ordering)
+6. When PR is merged: `/atg:retro {TICKET}`
