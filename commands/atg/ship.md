@@ -214,8 +214,14 @@ If there is no intentional behavior delta, **omit this heading entirely**.}
 
 ## Testing
 
-See: `bin/stories/{year}/{month}/{TICKET}-{slug}/testing/TESTING-GUIDE.md`
-Scenarios: `bin/stories/{year}/{month}/{TICKET}-{slug}/testing/scenarios/` (if present)
+{Never link to `bin/` paths (`TESTING-GUIDE.md`, `TESTING-PROGRESS.md`, `implementation-plan.md`,
+scenario scripts, etc.) — `bin/` is local scratch, gitignored/untracked, and inaccessible to any
+reviewer who doesn't have this exact local checkout. Summarize inline instead:
+- Unit/integration specs added or changed, and what they cover
+- Whether the full quality gate suite (test/detekt/codenarc/kover) passed
+- If `/atg:test-run` or manual verification ran: what was exercised and the outcome, inline — not
+  a pointer to the progress file. If it surfaced a bug, describe the bug inline (see
+  `bin/findings/*.md` convention) rather than saying "see TESTING-PROGRESS.md".}
 
 ---
 
@@ -232,6 +238,10 @@ Format: `{TICKET}: {branch description}`
 - Multi-branch: `WBPR-4032: [Branch 2/3] Service layer + unit tests`
 
 Derive the description from `implementation-plan.md` (`### Branch N:`) or the git branch name slug.
+
+**Gate before Step 9:** grep the fully-built PR body for `bin/`. If it matches anything, that's a
+reference to a local-only, uncommitted path — rewrite that section to inline the relevant content
+instead (see **PR Body Rules**) before proceeding.
 
 ### Step 9: Push and create PR (unless --dry-run)
 
@@ -295,6 +305,13 @@ Status:   {Draft PR — Jira stays In Development | Code Review (transitioned vi
 
 ## PR Body Rules
 
+- **Never reference a `bin/` or `bin/stories/**` path in the PR body** (or in any Jira comment —
+  see `/atg:qa-comment`). `bin/` is local scratch: gitignored/untracked, never committed, and
+  invisible to any reviewer without this exact local checkout. This includes `TESTING-GUIDE.md`,
+  `TESTING-PROGRESS.md`, `implementation-plan.md`, scenario scripts, and finding write-ups under
+  `bin/findings/`. Whatever content those files hold that's relevant to the reviewer must be
+  **inlined** into the PR body (a real payload example, a bug summary, a testing summary) — never
+  linked. Before publishing, grep the drafted body for `bin/` and fix any hit.
 - **Always extend the monorepo template** — never write a free-form body that omits the checklist.
 - Replace `LINK_TO_JIRA` with `[{TICKET}](https://auctiontechnologygroup.atlassian.net/browse/{TICKET})`.
 - Keep all template checklist items intact (`- [ ] ...`).

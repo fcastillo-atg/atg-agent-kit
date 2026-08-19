@@ -134,7 +134,11 @@ NOTE: This guide was created with AI; use it as a reference; perform your own va
 ```
 
 If `TESTING-PROGRESS.md` exists and all scenarios show `PASS`, append:
-> *Locally verified — all {N} scenarios passed (`TESTING-PROGRESS.md`).*
+> *Locally verified — all {N} scenarios passed.*
+
+(No filename in the appended line — `TESTING-PROGRESS.md` lives under `bin/`, is never committed,
+and QA reading the Jira comment cannot open it. Naming it as if it were referenceable is
+misleading; state the fact it confirms, not the path.)
 
 **Write the assembled comment to disk immediately** — always, including under `--dry-run` —
 next to `TESTING-GUIDE.md`:
@@ -295,6 +299,12 @@ Expected response:
 9. **One `---` divider per step** — Jira renders `---` as `<hr>`; improves readability in the ticket
 10. **Output always lands in `testing/QA-COMMENT.md`** — never a scratchpad or temp path; this holds
     even for `--dry-run`, so the draft is reviewable/diffable and survives the session
+11. **Never reference a `bin/` path inside the comment content itself** — `bin/` is local scratch,
+    gitignored/untracked, and invisible to QA reading the Jira ticket. Everything QA needs
+    (scenarios, curl blocks, expected responses, the AI disclaimer) is already inlined by this
+    template; the one place this used to leak was the `TESTING-PROGRESS.md` filename in the
+    "Locally verified" line — state the fact, not the filename. Before posting, grep the drafted
+    comment for `bin/` and fix any hit.
 
 ## Next steps (after posting)
 
