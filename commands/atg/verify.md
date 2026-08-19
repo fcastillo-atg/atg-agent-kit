@@ -24,11 +24,42 @@ The user has completed code changes and needs to verify that all quality gates p
 **Working directory:** Run all `./gradlew` commands from **`wavebid-a2o-service`** (repository root is the monorepo; service module contains `build.gradle.kts`).
 
 When this command is invoked, follow a step-by-step sequential verification approach:
+- **Freshness check (before Step 0):** skip any gate you already ran and saw pass earlier in this
+  conversation, if nothing has changed since
 - **Step 0 (preflight):** Liquibase update when changelogs changed (skip if no changelog edits)
 - **Step 1:** Run tests first and ensure they pass
 - **Step 2:** Run Kotlin static analysis (Detekt)
 - **Step 3:** Run Groovy static analysis (CodeNarc)
 - **Step 4:** Verify code coverage requirements
+
+### Freshness check — skip gates already verified this session
+
+`/atg:story-impl` and other commands routinely run these same gates while implementing. Calling
+`/atg:verify` immediately after should not blindly re-run gates that already passed against the
+exact current code — that doubles the token/time cost for no new information.
+
+**Before running each gate (Tests, Detekt, CodeNarc, Kover), check:**
+
+1. **Did I personally run this exact gate's command earlier in this conversation and see it
+   pass?** Recall this from your own conversation history — never assume or guess.
+2. **If yes:** run `git status --short` (and `git diff --stat` if useful) now, and compare against
+   what the working tree looked like immediately after that passing run.
+   - **Nothing changed** under `wavebid-a2o-service/` since (no edits, no new/removed files,
+     nothing staged or unstaged that wasn't there before): **skip re-running this gate.** Report
+     it in the final summary as `✅ PASSED (cached — no changes since last run in this session)`.
+   - **Anything changed**, even a single file that looks unrelated to this gate's usual scope (one
+     edit can affect module-wide compilation, coverage aggregation, or lint rules): **re-run the
+     gate fully.** Never partially trust a cached result once the tree has moved.
+3. **If a gate has never been run in this conversation, always run it** — there is no marker file
+   or other cross-session record to check, so a fresh session (no memory of prior runs) must run
+   every gate from scratch even if a previous session already verified the same commit.
+4. When genuinely unsure whether a change could affect a gate, re-run it — coverage numbers in
+   particular drift silently (a new untested file lowers global coverage without touching any
+   existing test), so default to re-running `koverVerify` unless you're confident nothing changed.
+
+This applies **per gate independently** — e.g. if Tests and Detekt already passed this session but
+you then added a Groovy test file, CodeNarc (and Kover, since it depends on `test`) need a fresh
+run while Detekt may still be safely skipped if no Kotlin file changed.
 
 ### Step-by-Step Sequential Verification
 
@@ -144,6 +175,33 @@ Step 2 Duration: 38s (Detekt)
 Step 3 Duration: 35s (CodeNarc)
 Step 4 Duration: 42s (Coverage)
 Total Duration: 260s
+All Quality Gates: ✅ PASSED
+Ready to commit!
+```
+
+**Success Report with cached gates** (e.g. `/atg:verify` called right after `/atg:story-impl`
+already ran tests + detekt this session, no code changed since):
+```
+🚀 Sequential Verification Complete!
+
+=== Step 1: Tests ===
+✅ PASSED (cached — no changes since last run in this session)
+
+=== Step 2: Kotlin Static Analysis (Detekt) ===
+✅ PASSED (cached — no changes since last run in this session)
+
+=== Step 3: Groovy Static Analysis (CodeNarc) ===
+✅ PASSED (0 violations, 35s)
+
+=== Step 4: Coverage Verification ===
+✅ PASSED (85.5% branch, 96.1% line, 42s)
+
+=== Summary ===
+Step 1 Duration: 0s (cached)
+Step 2 Duration: 0s (cached)
+Step 3 Duration: 35s (CodeNarc)
+Step 4 Duration: 42s (Coverage)
+Total Duration: 77s
 All Quality Gates: ✅ PASSED
 Ready to commit!
 ```
@@ -389,7 +447,9 @@ Ready to commit!
 
 ## Important Notes
 
-- **Never skip verification steps** - all must pass
+- **Every gate must be verified — passed either now or, per the freshness check above, already
+  witnessed passing this session with nothing changed since.** Never mark a gate green without
+  either a fresh run or a concretely-remembered prior passing run against the identical tree.
 - **Fix issues automatically** when possible
 - **Seek guidance** for complex issues that cannot be auto-fixed
 - **Use 15-minute timeouts** to handle long-running builds
