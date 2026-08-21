@@ -167,12 +167,11 @@ Re-run `/atg:brief WBPR-4095` to resume, or run `/atg:story-plan WBPR-4095` and 
 remaining questions inline.
 ```
 
-### Step 6: Commit
+### Step 6: Do not commit
 
-```bash
-git add bin/stories/{year}/{month}/{TICKET}-{slug}/
-git commit -m "chore(brief): pre-analysis for {TICKET} [$(date +%Y-%m-%d)]"
-```
+`bin/stories/` is local scratch, not repo content — **never** `git add` or `git commit` anything
+under `bin/`. Leave the story file and `implementation-plan.md` written to disk but untracked. A
+small, repo-committed plan (if/when needed) is a separate, later step — not part of `/atg:brief`.
 
 ### Step 7: Print summary and hand off
 
