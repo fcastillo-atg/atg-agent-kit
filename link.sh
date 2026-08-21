@@ -97,6 +97,17 @@ link_skills_to() {
     echo "$m"
 }
 
+# Drop every symlink in $1 that points into the kit. Used to tear down a scope
+# we no longer serve. Leaves unrelated skills (npx-installed, etc.) alone.
+drop_kit_skills_from() {
+    local dest="$1" m=0
+    [[ -d "$dest" ]] || { echo 0; return; }
+    while IFS= read -r -d '' l; do
+        case "$(readlink "$l")" in "$KIT"/*) command rm -f "$l"; m=$((m + 1)) ;; esac
+    done < <(find "$dest" -maxdepth 1 -type l -print0 2>/dev/null)
+    echo "$m"
+}
+
 link_user() {
     # omp reads ~/.claude/commands/atg/ (subdir, frontmatter intact). Cursor's
     # CLI reads FLAT ~/.cursor/commands/atg-*.md with frontmatter stripped
@@ -112,11 +123,11 @@ link_user() {
     rm -rf "$HOME/.claude/commands/atg"   # remove any copy from an older link.sh
     echo "  removed ~/.claude/commands/atg/ (project-scope only; avoids picker dups)"
     rm -rf "$HOME/.cursor/commands/atg"   # stale subdir from older link.sh (caused UI dups)
-    n=$(copy_commands_flat_to "$HOME/.cursor/commands") || exit 1
-    echo "  copied $n commands -> ~/.cursor/commands/atg-*.md (Cursor CLI+UI, frontmatter stripped)"
+    command rm -f "$HOME"/.cursor/commands/atg-*.md
+    echo "  removed ~/.cursor/commands/atg-*.md (project scope only)"
     local m
-    m=$(link_skills_to "$HOME/.claude/skills")
-    echo "  linked $m skills -> ~/.claude/skills (dir symlinks)"
+    m=$(drop_kit_skills_from "$HOME/.claude/skills")
+    echo "  removed $m kit skill symlinks from ~/.claude/skills (project scope only)"
 }
 
 # Content guard — link_checkout rm -rf's the checkout's atg dirs; refuse unless
@@ -155,10 +166,15 @@ link_checkout() {
     for sub in "" "wavebid-a2o-service" "wavebid-a2o-ui"; do
         rm -rf "$root/$sub/.cursor/commands/atg"
     done
-    rm -rf "$root/.claude/skills/atg"
+    # Per-skill symlinks at .claude/skills/<name>, NOT one .claude/skills/atg group
+    # symlink. Skill discovery is only proven to load SKILL.md ONE level under
+    # .claude/skills/; a group symlink puts them two levels down, where they were
+    # never observably contributing (the user-level links were doing the work).
+    rm -rf "$root/.claude/skills/atg"   # legacy group symlink from an older link.sh
     mkdir -p "$root/.claude/skills"
-    ln -sfn "$KIT/skills" "$root/.claude/skills/atg"
-    echo "  deployed $root: $n cmd copies (.claude) + skill symlink (Cursor served user-level by link_user)"
+    local m
+    m=$(link_skills_to "$root/.claude/skills")
+    echo "  deployed $root: $n cmd copies + $m per-skill symlinks (.claude, project scope only)"
 }
 
 if [[ "${1:-}" == "--checkout" ]]; then
