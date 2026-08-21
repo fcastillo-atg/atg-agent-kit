@@ -104,8 +104,13 @@ link_user() {
     # discovery follows dir symlinks). Cursor is served entirely user-level —
     # no project-level deploy, which only caused UI duplicates.
     local n
-    n=$(copy_commands_to "$HOME/.claude/commands/atg")
-    echo "  copied $n commands -> ~/.claude/commands/atg/ (omp, frontmatter intact)"
+    # NO user-level omp command deploy. Claude Code lists user- and project-scope
+    # commands separately (no dedupe by name), so a ~/.claude/commands/atg copy
+    # showed every /atg:* twice in the picker: "(user)" + "(project)". Commands are
+    # served per-checkout by link_checkout; run `./link.sh --checkout <root>` for
+    # each wavebid checkout/worktree. Skills and Cursor stay user-level below.
+    rm -rf "$HOME/.claude/commands/atg"   # remove any copy from an older link.sh
+    echo "  removed ~/.claude/commands/atg/ (project-scope only; avoids picker dups)"
     rm -rf "$HOME/.cursor/commands/atg"   # stale subdir from older link.sh (caused UI dups)
     n=$(copy_commands_flat_to "$HOME/.cursor/commands") || exit 1
     echo "  copied $n commands -> ~/.cursor/commands/atg-*.md (Cursor CLI+UI, frontmatter stripped)"
