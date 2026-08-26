@@ -44,21 +44,52 @@ Match the tone used in prior sessions — terse, no preamble, no em dash:
 
 ## Execution steps
 
-### Step 1: Resolve target and position
+### Step 1: Resolve target
 
 ```bash
 OWNER_REPO=$(git remote get-url origin | sed -E 's#.*[:/]([^/]+/[^/.]+)(\.git)?$#\1#')
 COMMIT_SHA=$(gh api repos/$OWNER_REPO/pulls/{PR_NUMBER}/commits --jq '.[-1].sha')
 ```
 
-Confirm `{FILE}:{LINE}` falls inside the PR diff's added/context lines (`RIGHT` side). If the line
-isn't part of the diff hunk, the GitHub API rejects the comment — check with:
+### Step 2: Dedup check (mandatory, before posting anything)
+
+Fetch every existing comment on the PR — inline review comments and top-level issue comments,
+from bots and humans alike:
+
+```bash
+gh api repos/$OWNER_REPO/pulls/{PR_NUMBER}/comments \
+  --jq '.[] | {path, line, user: .user.login, body, html_url}'
+gh api repos/$OWNER_REPO/issues/{PR_NUMBER}/comments \
+  --jq '.[] | {user: .user.login, body, html_url}'
+```
+
+For each candidate finding, check existing **inline** comments whose `path` matches the finding's
+`{FILE}` and whose `line` is within **3 lines** of the finding's `{LINE}`. A candidate is a
+duplicate only if such a comment exists **and** it's about the same root cause (read the body —
+same defect, not just nearby code). Line-proximity alone is not enough; two different bugs can sit
+three lines apart.
+
+For every finding that is a duplicate:
+
+- **Skip posting it.**
+- Tell the user: which finding was skipped, who already flagged it, and the existing comment's
+  `html_url`.
+
+Do not ask for confirmation per duplicate — filter silently and report the filtering in one
+summary line, then proceed straight to posting the remaining unique findings. Only stop and ask if
+literally every candidate finding turns out to be a duplicate (nothing left to post).
+
+### Step 3: Post remaining unique findings
+
+For each finding that survived Step 2, confirm `{FILE}:{LINE}` falls inside the PR diff's
+added/context lines (`RIGHT` side) — if the line isn't part of the diff hunk, the GitHub API
+rejects the comment:
 
 ```bash
 gh api repos/$OWNER_REPO/pulls/{PR_NUMBER}/files --jq '.[] | select(.filename=="{FILE}") | .patch'
 ```
 
-### Step 2: Post
+Then post:
 
 ```bash
 gh api repos/$OWNER_REPO/pulls/{PR_NUMBER}/comments \
@@ -69,18 +100,21 @@ gh api repos/$OWNER_REPO/pulls/{PR_NUMBER}/comments \
   -f body="{comment body per style above}"
 ```
 
-### Step 3: Confirm
+One `gh api` call per finding — never batch multiple findings into one comment body.
 
-Print the returned `html_url` so the user can open the thread directly. Do not paginate or fetch
-the full comment list back — the create response has everything needed.
+### Step 4: Confirm
+
+Print a short summary: how many posted, how many skipped as duplicates (with who/where), and the
+`html_url` of each newly posted comment so the user can open the threads directly. Do not paginate
+or re-fetch the full comment list — the create response has everything needed.
 
 ## Notes
 
-- One comment per invocation. For multiple findings, call this once per finding (or prefer
-  `/code-review {level} {target} --comment` when reviewing a whole PR — it batches this same
-  posting step per finding it confirms).
+- Can be invoked with one finding or a batch (e.g. all findings from a prior `/code-review` run
+  still in context) — the dedup check and posting loop both operate per-finding regardless.
 - Never bulk-post via `gh pr comment` (that's a top-level issue comment, not inline) — inline
-  requires the `pulls/{PR_NUMBER}/comments` endpoint with `path`/`line`/`commit_id`.
+  requires the `pulls/{PR_NUMBER}/comments` endpoint with `path`/`line`/`commit_id`, one call per
+  finding.
 - Requires PR authorization already established in the session (i.e. this is a visible, one-way
   action on a shared PR — don't post without the user having asked for it, per the session's
   default confirm-before-external-action rule).
