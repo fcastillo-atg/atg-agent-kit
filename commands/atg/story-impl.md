@@ -61,6 +61,26 @@ From `implementation-plan.md`, extract **only** the sections for branch `N`:
 - Acceptance criteria that this branch must satisfy
 - If branch 1 and a feature flag is required: **feature flag file and wiring first** (per story-plan safety rules)
 - Testing notes: which specs or scenarios to add or extend
+- A **suggested commit order** (see below)
+
+**Always propose a suggested commit order.** A branch is a unit of review, not a unit of work: even
+a small slice reviews better as a few commits that each tell one story. This matters most when a
+branch lands above the ~500 LOC guideline, where it is the main thing keeping the PR reviewable,
+but it is worth doing at any size.
+
+Derive the order with these rules:
+
+1. **Every commit compiles and passes its own tests.** A reviewer must be able to stop at any commit.
+2. **Feature flag first**, disabled. Zero behaviour change.
+3. **Additive before wiring.** New helpers, indexes, DTOs and pure functions land before anything
+   calls them, so the commit that changes behaviour is small and obvious.
+4. **Tests travel with their subject**, not batched into a trailing "add tests" commit.
+5. **One behaviour change per commit.** Name the AC it satisfies.
+6. **Pure-refactor commits stay separate** from behaviour commits, and say so in the message.
+
+Where the plan has a `## Branch strategy` with a commit order already sketched, reuse it rather
+than inventing a new one. Where a branch was deliberately kept whole instead of split, slice the
+commit order along the seam the split would have used, so peeling it apart later stays cheap.
 
 Output a **numbered checklist** the implementer can tick off:
 
@@ -70,6 +90,10 @@ Output a **numbered checklist** the implementer can tick off:
 ### Prerequisites
 - [ ] On branch `{branch-name}`
 - [ ] Dependencies from earlier branches merged (if N > 1)
+
+### Suggested commit order
+1. [ ] {commit subject} — {what lands, which AC, why it is safe to stop here}
+2. [ ] ...
 
 ### Implementation
 1. [ ] {file or task}
@@ -89,6 +113,11 @@ Output a **numbered checklist** the implementer can tick off:
 ### Step 5: Execute (agent behavior)
 
 Unless **`--queue-only`** (or the user asked only for the queue): **implement** every item in the checklist in order — create/modify production code and tests.
+
+**Commit along the suggested commit order** rather than in one lump at the end. Do not stage
+everything and split it retroactively; work to the order so each commit is genuinely self-contained.
+If the real work diverges from the proposed order, say so and revise the order, do not silently
+abandon it.
 
 - Match existing codebase patterns (see `CLAUDE.md`, `.claude/rules/service-patterns.md`)
 - Kotlin: expression bodies where appropriate, `OrThrow`/`OrNull`, `mu.KotlinLogging`
