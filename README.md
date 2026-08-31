@@ -26,8 +26,10 @@ Deploys three ways — each tool reads a different path/format:
   (no subdir), with YAML frontmatter **stripped** and the description hoisted to line 1.
   Cursor's CLI picker uses line 1 as the description; a leading `---` renders as
   `--- (user)`. Exposed as `/atg-brief` (hyphen — Cursor has no `ns:cmd` syntax).
-- **skills** → `~/.claude/skills/<name>/` — per-directory symlinks (omp skill discovery
-  follows dir symlinks, so the kit stays single-source).
+Skills and omp commands are **not** deployed here — they're project-scope only, deployed
+per checkout below, for the same reason as Cursor's exclusion from that side: Claude Code
+lists user- and project-scope commands separately (no dedupe by name), so a user-level copy
+would show every `/atg:*` twice in the picker.
 
 Commands are real file copies (not symlinks) because omp's command glob drops symlinked
 `.md`, and Cursor's walker dead-ends on dir symlinks. Trade-off: the kit is the source of
@@ -47,6 +49,22 @@ re-links skills. Cursor is served entirely user-level (above), so this does **no
 project `.cursor/` — it only removes any stale `.cursor/commands/atg/` subdir left by
 older `link.sh` versions (those caused UI duplicates). Refuses to run unless the kit has a
 clean commit.
+
+## Install for teammates
+
+The repo is public — anyone with the link can clone it, no invite needed. It doesn't need to
+sit inside (or specifically next to) a `wavebid-a2o` checkout — `link.sh` finds its own
+location automatically — but a sibling directory, the same way the author keeps it, is the
+simplest layout to remember:
+
+```bash
+cd ~/ATG   # or wherever you keep wavebid-a2o
+git clone https://github.com/fcastillo-atg/atg-agent-kit.git
+```
+
+Then follow the two sections above: the user-level install once, and `--checkout` once per
+`wavebid-a2o` checkout/worktree you work in. Re-run both after pulling kit updates —
+`link.sh` is idempotent and safe to re-run anytime.
 
 ## Why this exists
 

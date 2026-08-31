@@ -1,24 +1,33 @@
 #!/usr/bin/env bash
 # Idempotent deployer for atg-agent-kit.
-#   ./link.sh                      # user-level: ~/.claude/{commands/atg,skills}
-#                                  #              ~/.cursor/commands/atg-*.md
-#   ./link.sh --checkout <root>    # a wavebid checkout/worktree + its subrepos
+#   ./link.sh                      # user-level: ~/.cursor/commands/atg-*.md only
+#                                  #              (also prunes stale user-level
+#                                  #              omp commands/skills from older
+#                                  #              link.sh versions)
+#   ./link.sh --checkout <root>    # a wavebid checkout/worktree + its subrepos:
+#                                  # project-level omp commands + skills
 #
 # Asymmetry is load-bearing and mandated by each tool's discovery model:
-#   - omp COMMANDS (~/.claude/commands/atg/): REAL FILE COPIES in a subdir,
-#     WITH frontmatter. omp's command glob uses ignore::WalkBuilder
+#   - omp COMMANDS (<checkout>/.claude/commands/atg/): REAL FILE COPIES in a
+#     subdir, WITH frontmatter, PROJECT-SCOPE ONLY (deployed per checkout by
+#     link_checkout). omp's command glob uses ignore::WalkBuilder
 #     (follow_links OFF) and loadFilesFromDir filters fileType:File, so a
 #     symlinked .md is yielded then DROPPED. omp renders the frontmatter
-#     description in its picker.
+#     description in its picker. No user-level copy: Claude Code lists user-
+#     and project-scope commands separately (no dedupe by name), so a
+#     ~/.claude/commands/atg copy showed every /atg:* twice in the picker.
 #   - Cursor COMMANDS (~/.cursor/commands/atg-*.md): REAL FILE COPIES, FLAT
 #     (no subdir — the CLI reads flat ~/.cursor/commands/*.md only), with YAML
 #     frontmatter STRIPPED and the description promoted to line 1. Cursor's CLI
 #     picker uses the file's first line as the description; a leading --- renders
 #     as "--- (user)". omp is unaffected — it reads intact frontmatter from
-#     ~/.claude. Cursor is served entirely user-level; project-level .cursor/
+#     ~/.claude. Cursor is served entirely user-level (it has no project/user
+#     distinction worth exploiting the way omp does); project-level .cursor/
 #     deploys only caused UI duplicates (brief + atg-brief).
-#   - SKILLS (~/.claude/skills/<name>): per-DIRECTORY SYMLINKS. Skill discovery
-#     is readdir-based and follows dir symlinks, so the kit stays single-source.
+#   - SKILLS (<checkout>/.claude/skills/<name>): per-DIRECTORY SYMLINKS,
+#     PROJECT-SCOPE ONLY (deployed per checkout by link_checkout, same reasoning
+#     as omp commands above). Skill discovery is readdir-based and follows dir
+#     symlinks, so the kit stays single-source.
 # Kit is source of truth — re-run link.sh after editing a command.
 set -euo pipefail
 
@@ -109,22 +118,24 @@ drop_kit_skills_from() {
 }
 
 link_user() {
-    # omp reads ~/.claude/commands/atg/ (subdir, frontmatter intact). Cursor's
-    # CLI reads FLAT ~/.cursor/commands/atg-*.md with frontmatter stripped
-    # (line 1 = description). Skills symlink into ~/.claude/skills (omp skill
-    # discovery follows dir symlinks). Cursor is served entirely user-level —
-    # no project-level deploy, which only caused UI duplicates.
-    local n
-    # NO user-level omp command deploy. Claude Code lists user- and project-scope
-    # commands separately (no dedupe by name), so a ~/.claude/commands/atg copy
-    # showed every /atg:* twice in the picker: "(user)" + "(project)". Commands are
-    # served per-checkout by link_checkout; run `./link.sh --checkout <root>` for
-    # each wavebid checkout/worktree. Skills and Cursor stay user-level below.
+    # omp/Claude Code commands and skills are project-scope only now, deployed
+    # per checkout by link_checkout (run `./link.sh --checkout <root>` for each
+    # wavebid checkout/worktree). Claude Code lists user- and project-scope
+    # commands separately (no dedupe by name), so a user-level ~/.claude/commands/atg
+    # copy showed every /atg:* twice in the picker: "(user)" + "(project)" — same
+    # reason skills don't get a user-level symlink either.
+    #
+    # Cursor has no project/user distinction worth exploiting the same way (its CLI
+    # reads one flat ~/.cursor/commands/*.md dir, no per-project variant), so it stays
+    # the one thing served user-level: REAL FILE COPIES, FLAT, with YAML frontmatter
+    # STRIPPED and the description promoted to line 1 (Cursor's CLI picker uses the
+    # file's first line as the description; a leading --- renders as "--- (user)").
     rm -rf "$HOME/.claude/commands/atg"   # remove any copy from an older link.sh
     echo "  removed ~/.claude/commands/atg/ (project-scope only; avoids picker dups)"
     rm -rf "$HOME/.cursor/commands/atg"   # stale subdir from older link.sh (caused UI dups)
-    command rm -f "$HOME"/.cursor/commands/atg-*.md
-    echo "  removed ~/.cursor/commands/atg-*.md (project scope only)"
+    local n
+    n=$(copy_commands_flat_to "$HOME/.cursor/commands") || exit 1
+    echo "  copied $n commands -> ~/.cursor/commands/atg-*.md (Cursor CLI+UI, frontmatter stripped)"
     local m
     m=$(drop_kit_skills_from "$HOME/.claude/skills")
     echo "  removed $m kit skill symlinks from ~/.claude/skills (project scope only)"
