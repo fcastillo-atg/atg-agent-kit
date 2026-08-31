@@ -7,7 +7,8 @@ any cwd or worktree.
 ## Contents
 
 - [Commands](#commands) — 20 `/atg:*` slash commands, what each does, and how they chain
-  together, with a diagram.
+  together, with a diagram. See [`docs/example-story-walkthrough.md`](docs/example-story-walkthrough.md)
+  for one story followed through the whole timeline with example output at each step.
 - [Skills](#skills) — 6 flat skill directories (flattened from the repo's nested
   `skills/atg/<name>/` layout, which wasn't discovered at that nesting depth).
 - `link.sh` — idempotent installer (see [Install](#install-user-level-any-machine) below).
@@ -122,6 +123,9 @@ flowchart TD
 Dashed edges are "reports on" / "feeds into" relationships; solid edges are the sequential
 hand-off order. `story-auto-run` runs the boxed chain unattended; `ship` and `qa-comment` are
 deliberately left as manual steps even when the rest of the chain ran automatically.
+
+See [`docs/example-story-walkthrough.md`](docs/example-story-walkthrough.md) for one story
+followed through this whole timeline, with abbreviated real output at every step.
 
 ## Skills
 
