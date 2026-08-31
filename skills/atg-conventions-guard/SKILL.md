@@ -23,6 +23,10 @@ Use this skill as a fast, pre-verify guardrail for common service-level style an
 2. Spring/JPA patterns:
    - Do not add `@Param` unless there is a specific, documented need
    - Keep controller/service null handling patterns consistent with project conventions
+   - REST controller methods returning a collection or page must wrap it in the project's
+     `OneIndexedPage` pattern (see e.g. `getChoices`), never a bare `ResponseEntity<Collection<...>>`
+     or `List<...>`. A repo Konsist guardrail test ("rest functions do not return a ResponseEntity
+     containing a Collection or Page") blocks the build on this — catch it here, before the gate does.
 3. Groovy/Spock patterns:
    - Single quotes unless interpolation is required
    - Prefer concrete types over `def`

@@ -11,8 +11,10 @@ or work with Dynatrace data for this project.
 ## Step 0 — Load reference
 
 Always read the companion reference file before writing any DQL query or making any tool call:
-the co-located `reference.md` next to this `SKILL.md` (same skill directory — wherever this kit
-was linked to on the current machine, e.g. `~/.claude/skills/dynatrace-mcp/reference.md`).
+the co-located `reference.md` in this skill's own directory. Skills in this repo are
+project-scoped (`.claude/skills/dynatrace-mcp/reference.md`), not deployed to a global
+`~/.claude/skills/...` path — resolve the path relative to wherever this `SKILL.md` was actually
+loaded from, don't assume the global location exists.
 
 This file contains accumulated gotchas, working query patterns, and field notes.
 Never skip this step — it prevents re-learning the same lessons.
