@@ -105,19 +105,25 @@ fenced code blocks, links), it **must be converted to Atlassian Document Format 
 before posting. `acli comment create --help` confirms `--body-file` only accepts "plain text or
 Atlassian Document Format (ADF)" — there is no Markdown option, and Jira Cloud dropped wiki-markup
 rendering for comments. Posting a `.md` file directly succeeds with no error but renders the raw
-`**`/`` ` ``/`##`/`|...|` characters as literal text in the Jira UI.
+`**`/`` ` ``/`##`/`|...|` characters as literal text in the Jira UI — and the comment is now live
+and visible to whoever is watching the ticket (often QA, waiting on it) before anyone notices.
 
-Convert first, using a small scoped Python converter (headings, paragraphs with bold/code/link
-marks, bullet lists, tables, fenced code blocks, and rules cover nearly all QA-comment content —
-no need for a generic Markdown library), then post the resulting `.json`:
+Follow this order every time. Do not treat step 2 as done until step 3 has actually run —
+"the JSON looked right" is not verification, and a broken public comment costs more to fix
+than the extra 10 seconds this step takes:
 
-```bash
-acli jira workitem comment create --key {TICKET} --body-file /path/to/comment.adf.json
-```
-
-**Verify** by re-fetching: `acli jira workitem comment list --key {TICKET} --json` and confirming
-the flattened text has no stray `**`/`` ` ``/`##` characters — their absence means Jira parsed
-real marks rather than displaying raw syntax.
+1. **Convert.** Any Markdown formatting → ADF JSON, using a small scoped Python converter
+   (headings, paragraphs with bold/code/link marks, bullet lists, tables, fenced code blocks, and
+   rules cover nearly all QA-comment content — no need for a generic Markdown library).
+2. **Post.**
+   ```bash
+   acli jira workitem comment create --key {TICKET} --body-file /path/to/comment.adf.json
+   ```
+3. **Verify — mandatory, not optional.** Immediately re-fetch: `acli jira workitem comment list
+   --key {TICKET} --json`, and confirm the flattened text has no stray `**`/`` ` ``/`##`
+   characters (including single-asterisk italics, not just `**bold**` — both slip through the
+   same way). Their absence means Jira parsed real marks rather than displaying raw syntax. Only
+   report the comment as posted after this check passes.
 
 If a comment was already posted with broken (literal-Markdown) formatting, fix it in place with
 `--edit-last` (edits the last comment from the same author) rather than leaving the broken one and
