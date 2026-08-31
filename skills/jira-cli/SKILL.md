@@ -24,8 +24,12 @@ OAuth account) for `WBPR-*`/`SP2-*` keys, **switch** — do not re-login:
 ```bash
 acli jira auth switch \
   --site auctiontechnologygroup.atlassian.net \
-  --email franklincastillo@auctiontechnologygroup.com
+  --email {your-atg-email}
 ```
+
+`{your-atg-email}` is the current user's own ATG Atlassian account email — never hardcode a
+specific person's address here. If it isn't already known from context, `git config user.email`
+is a reasonable default; ask the user to confirm if that doesn't look like an ATG address.
 
 Interactive: `acli jira auth switch`. Verify with:
 
@@ -39,7 +43,7 @@ Only if the ATG account is missing entirely, login with the token (never echo it
 ```bash
 printf '%s' "$ATG_JIRA_TOKEN" | acli jira auth login \
   --site auctiontechnologygroup.atlassian.net \
-  --email franklincastillo@auctiontechnologygroup.com \
+  --email {your-atg-email} \
   --token
 ```
 

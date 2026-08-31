@@ -185,7 +185,11 @@ testing/
 └── TESTING-GUIDE.md              # This file (overview + detailed steps)
 ```
 
-**Template**: Read `/Users/fcastilloatg/ATG/wavebid-a2o/.cursor/commands/atg/testing-guide-template.md` for the full merged template and dynamic content injection list. Fill every `{placeholder}` with story-specific content and follow the section order defined there.
+**Template**: Read the sibling `testing-guide-template` command (`/atg:testing-guide-template` in
+Claude Code/omp, or `atg-testing-guide-template.md` in Cursor's flat commands dir — same commands
+directory as this file, wherever the kit is deployed) for the full merged template and dynamic
+content injection list. Fill every `{placeholder}` with story-specific content and follow the
+section order defined there.
 
 ### Step 4: (Optional) Generate scenarios/*.sh Files
 
