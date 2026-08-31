@@ -60,12 +60,16 @@ command's instructions explicitly point at another.
   command in that chain also stands alone — you can run `/atg:verify` by itself without ever
   touching `story-auto-run`.
 - **`ship`** sits right after the chain (not part of it — stays manual) and fans out to
-  everything post-merge: `changeset`, `qa-comment`, `retro`, `review-feedback`, `test-run`,
+  everything post-merge: `changeset`, `qa-comment`, `retro`, `review-feedback`,
   `testing-doc`, `verify`.
 - **`testing-doc` → `testing-guide-template`**: `testing-doc` reads the template command's
-  content to fill in `TESTING-GUIDE.md`; `test-run` then executes what `testing-doc` produced.
-- **`qa-comment`** references `test-run`, `testing-doc`, and `retro` — it's a sibling of
-  `test-run` (Jira-facing instead of curl-executing) that also feeds into wrap-up.
+  content to fill in `TESTING-GUIDE.md`. **`test-run` then executes what `testing-doc`
+  produced** — optionally, before `ship` even runs, specifically to catch bugs unit tests
+  miss before merging.
+- **`qa-comment`** references `test-run`, `testing-doc`, and `retro` — it explicitly runs
+  **after** `test-run` confirms every scenario passes locally, then reposts the same
+  `testing-doc` content as Jira-facing instructions for QA to independently verify on
+  dev/stage.
 - **`pr-comment`** feeds into **`review-feedback`**: a single posted finding is exactly the
   kind of thing `review-feedback` later classifies and resolves.
 - **`explain`** and **`story-view`** are the two "summarize everything" tools — both reference
@@ -94,11 +98,11 @@ flowchart TD
 
     template["/atg:testing-guide-template"]
     testingdoc -. fills in .-> template
+    testingdoc -. optional, pre-ship .-> testrun["/atg:test-run"]
 
     testingdoc --> ship["/atg:ship (manual)"]
-    ship --> qacomment["/atg:qa-comment (manual)"]
-    ship --> testrun["/atg:test-run"]
-    qacomment --> testrun
+    testrun --> qacomment["/atg:qa-comment (manual)"]
+    ship --> qacomment
     ship --> retro["/atg:retro"]
     testrun --> retro
     qacomment --> retro
