@@ -7,7 +7,9 @@ any cwd or worktree.
 ## Contents
 
 - `commands/atg/*.md` — 20 `/atg:*` slash commands (plus `README.md`, which is
-  documentation and excluded from deploys).
+  documentation and excluded from deploys). See
+  [`docs/commands-workflow.md`](docs/commands-workflow.md) for what each one does and how
+  they chain together, with a diagram.
 - `skills/<name>/` — 6 flat skill directories (flattened from the repo's nested
   `skills/atg/<name>/` layout, which wasn't discovered at that nesting depth).
 - `link.sh` — idempotent installer.
