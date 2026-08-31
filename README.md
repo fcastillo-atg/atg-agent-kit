@@ -72,13 +72,18 @@ command's instructions explicitly point at another.
   dev/stage.
 - **`pr-comment`** feeds into **`review-feedback`**: a single posted finding is exactly the
   kind of thing `review-feedback` later classifies and resolves.
-- **`explain`** and **`story-view`** are the two "summarize everything" tools — both reference
-  most of the life-cycle commands (`brief`, `pattern-check`, `story-gap`, `verify`, plus
-  `ship`/`status`/`review-feedback` for `explain`) because their job is to report on where a
-  story stands across all of them, not to hand off to a specific next step.
+- **`review-feedback`** loops back to **`verify`** after applying fixes ("mandatory sanity
+  check after review fixes," per its own file) — it does not skip straight to `retro`.
+- **`story-view`** is the "summarize everything" dashboard — it genuinely tracks status for
+  every life-cycle stage (`brief`, `story-plan`, per-branch `story-impl`/`verify`/`story-gap`/
+  `ship`, `testing-doc`/`test-run`, `qa-comment`, `retro`), unlike `explain` below.
+- **`explain`** is *not* a lifecycle dashboard (its own file says so explicitly) — it explains
+  the diff itself ("what am I about to merge?") and only suggests next steps: `status` for
+  CI/branch state, `story-gap` for AC coverage, `ship` when ready, `brief` only as an optional
+  fallback when story context is missing.
 - **`status`** references `story-impl`, `ship`, `verify`, `review-feedback`, `retro` — same
-  reporting role as `explain`/`story-view`, but scoped to "which branches are at which stage"
-  rather than one story's detail.
+  reporting role as `story-view`, but scoped to "which branches are at which stage" rather
+  than one story's detail.
 
 ### Workflow diagram
 
@@ -111,6 +116,7 @@ flowchart TD
     prcomment["/atg:pr-comment"]
     ship -.-> reviewfeedback
     prcomment -. posts a finding for .-> reviewfeedback
+    reviewfeedback -. loops back to .-> verify
     reviewfeedback -.-> retro
 
     status["/atg:status"]
@@ -118,7 +124,7 @@ flowchart TD
     storyview["/atg:story-view"]
     status -. reports on .-> storyimpl
     status -.-> ship
-    explain -. reports on .-> brief
+    explain -. suggests .-> storygap
     explain -.-> ship
     storyview -. reports on .-> storyplan
     storyview -.-> storygap
