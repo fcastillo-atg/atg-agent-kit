@@ -2,40 +2,39 @@
 # Idempotent deployer for atg-agent-kit.
 #   ./link.sh                      # user-level: ~/.cursor/commands/atg-*.md only
 #                                  #              (also prunes stale user-level
-#                                  #              omp commands/skills from older
-#                                  #              link.sh versions)
+#                                  #              Claude Code commands/skills from
+#                                  #              older link.sh versions)
 #   ./link.sh --checkout <root>    # a wavebid checkout/worktree + its subrepos:
-#                                  # project-level omp commands + skills
+#                                  # project-level Claude Code commands + skills
 #
 # Asymmetry is load-bearing and mandated by each tool's discovery model:
-#   - omp COMMANDS (<checkout>/.claude/commands/atg/): REAL FILE COPIES in a
-#     subdir, WITH frontmatter, PROJECT-SCOPE ONLY (deployed per checkout by
-#     link_checkout). omp's command glob uses ignore::WalkBuilder
-#     (follow_links OFF) and loadFilesFromDir filters fileType:File, so a
-#     symlinked .md is yielded then DROPPED. omp renders the frontmatter
-#     description in its picker. No user-level copy: Claude Code lists user-
-#     and project-scope commands separately (no dedupe by name), so a
-#     ~/.claude/commands/atg copy showed every /atg:* twice in the picker.
+#   - Claude Code COMMANDS (<checkout>/.claude/commands/atg/): REAL FILE COPIES
+#     in a subdir, WITH frontmatter, PROJECT-SCOPE ONLY (deployed per checkout
+#     by link_checkout). Claude Code renders the frontmatter description in its
+#     picker. No user-level copy: Claude Code lists user- and project-scope
+#     commands separately (no dedupe by name), so a ~/.claude/commands/atg copy
+#     showed every /atg:* twice in the picker.
 #   - Cursor COMMANDS (~/.cursor/commands/atg-*.md): REAL FILE COPIES, FLAT
 #     (no subdir — the CLI reads flat ~/.cursor/commands/*.md only), with YAML
-#     frontmatter STRIPPED and the description promoted to line 1. Cursor's CLI
-#     picker uses the file's first line as the description; a leading --- renders
-#     as "--- (user)". omp is unaffected — it reads intact frontmatter from
-#     ~/.claude. Cursor is served entirely user-level (it has no project/user
-#     distinction worth exploiting the way omp does); project-level .cursor/
-#     deploys only caused UI duplicates (brief + atg-brief).
+#     frontmatter STRIPPED and the description promoted to line 1 — a transform
+#     that necessarily produces a new file, so these can't be symlinks to the
+#     original regardless. Cursor's CLI picker uses the file's first line as the
+#     description; a leading --- renders as "--- (user)". Cursor is served
+#     entirely user-level (it has no project/user distinction worth exploiting
+#     the way Claude Code does); project-level .cursor/ deploys only caused UI
+#     duplicates (brief + atg-brief).
 #   - SKILLS (<checkout>/.claude/skills/<name>): per-DIRECTORY SYMLINKS,
 #     PROJECT-SCOPE ONLY (deployed per checkout by link_checkout, same reasoning
-#     as omp commands above). Skill discovery is readdir-based and follows dir
-#     symlinks, so the kit stays single-source.
+#     as Claude Code commands above). Skill discovery is readdir-based and
+#     follows dir symlinks, so the kit stays single-source.
 # Kit is source of truth — re-run link.sh after editing a command.
 set -euo pipefail
 
 KIT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Materialize commands/atg/*.md (except README.md) as real files at $1, WITH
-# frontmatter intact (omp renders the description field). Wipes $1 first so
-# deletes propagate. Echoes the count copied.
+# frontmatter intact (Claude Code renders the description field in its
+# picker). Wipes $1 first so deletes propagate. Echoes the count copied.
 copy_commands_to() {
     local dest="$1"
     rm -rf "$dest"
@@ -118,7 +117,7 @@ drop_kit_skills_from() {
 }
 
 link_user() {
-    # omp/Claude Code commands and skills are project-scope only now, deployed
+    # Claude Code commands and skills are project-scope only now, deployed
     # per checkout by link_checkout (run `./link.sh --checkout <root>` for each
     # wavebid checkout/worktree). Claude Code lists user- and project-scope
     # commands separately (no dedupe by name), so a user-level ~/.claude/commands/atg
@@ -159,7 +158,7 @@ assert_backup_ready() {
     echo "  backup verified: $cmds commands, $skills skills, clean tree @ $(git -C "$KIT" rev-parse --short HEAD)"
 }
 
-# Deploy into a wavebid checkout/worktree. omp + Claude Code read project-level
+# Deploy into a wavebid checkout/worktree. Claude Code reads project-level
 # .claude/commands/atg/ (subdir, frontmatter intact). Cursor is served entirely
 # by link_user's user-level flat deploy, so we do NOT touch project .cursor/ —
 # we only remove any stale .cursor/commands/atg subdir left by older link.sh

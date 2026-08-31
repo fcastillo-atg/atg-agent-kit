@@ -186,7 +186,7 @@ testing/
 ```
 
 **Template**: Read the sibling `testing-guide-template` command (`/atg:testing-guide-template` in
-Claude Code/omp, or `atg-testing-guide-template.md` in Cursor's flat commands dir — same commands
+Claude Code, or `atg-testing-guide-template.md` in Cursor's flat commands dir — same commands
 directory as this file, wherever the kit is deployed) for the full merged template and dynamic
 content injection list. Fill every `{placeholder}` with story-specific content and follow the
 section order defined there.
