@@ -143,6 +143,17 @@ Blocked: do NOT ship until missing ACs are addressed.
    1 shared setup (auth), 3 scenarios (null→inherited, explicit-set retained, migration safety)
 ```
 
+**`/atg:test-run WBPR-4032`** — optional, but worth running here: executes the guide
+`testing-doc` just produced, *before* `ship`, specifically to catch bugs unit tests miss
+(Hibernate flush-order issues, constraint violations):
+```
+🔐 Authenticated. 3 scenarios:
+  ✅ Scenario 1: null address → inherits from auction (201, address matches auction)
+  ✅ Scenario 2: explicit address → retained (201, address unchanged)
+  ✅ Scenario 3: existing lot unaffected by migration (200, address unchanged pre-migration)
+📝 Wrote TESTING-PROGRESS.md — 3/3 passed.
+```
+
 **`/atg:ship WBPR-4032 --branch 3`** — last branch, so the As-built and testing-doc checks
 both pass (already filled in / already generated above):
 ```
@@ -158,22 +169,15 @@ PR — goes through `/atg:pr-comment` instead, which `/atg:review-feedback` woul
 
 ## 5. Post-merge (once all 3 PRs are merged)
 
-**`/atg:qa-comment WBPR-4032`** — drafts, shows for approval, then posts to Jira:
+**`/atg:qa-comment WBPR-4032`** — runs *after* `test-run` already confirmed everything
+locally (above); reposts the same `TESTING-GUIDE.md` content as Jira-facing instructions so
+QA can independently verify on dev/stage:
 ```
 Draft QA comment for WBPR-4032:
   Environment: dev / stage — PR #461 already merged
   3 scenarios, Postman-format {{variables}}
 Post this comment to WBPR-4032? (y/n): y
 ✅ Comment posted.
-```
-
-**`/atg:test-run WBPR-4032`** — executes the guide `testing-doc` produced:
-```
-🔐 Authenticated. 3 scenarios:
-  ✅ Scenario 1: null address → inherits from auction (201, address matches auction)
-  ✅ Scenario 2: explicit address → retained (201, address unchanged)
-  ✅ Scenario 3: existing lot unaffected by migration (200, address unchanged pre-migration)
-📝 Wrote TESTING-PROGRESS.md — 3/3 passed.
 ```
 
 **`/atg:retro WBPR-4032`** — the real example from `retro.md`:
