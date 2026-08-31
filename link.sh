@@ -188,8 +188,32 @@ link_checkout() {
     echo "  deployed $root: $n cmd copies + $m per-skill symlinks (.claude, project scope only)"
 }
 
+# Walk up from $PWD looking for a wavebid root (same signature link_checkout
+# checks: wavebid-a2o-service + wavebid-a2o-ui as direct children). Lets
+# `--checkout` with no path work from anywhere inside the checkout, e.g. cwd
+# is wavebid-a2o-service itself. Echoes the root, or errors if none is found
+# by the time we hit /.
+find_wavebid_root() {
+    local dir="$PWD"
+    while true; do
+        if [[ -d "$dir/wavebid-a2o-service" && -d "$dir/wavebid-a2o-ui" ]]; then
+            echo "$dir"
+            return 0
+        fi
+        [[ "$dir" == "/" ]] && break
+        dir="$(dirname "$dir")"
+    done
+    echo "not inside a wavebid checkout (no ancestor of $PWD has both wavebid-a2o-service and wavebid-a2o-ui)" >&2
+    return 1
+}
+
 if [[ "${1:-}" == "--checkout" ]]; then
-    link_checkout "${2:?usage: link.sh --checkout <wavebid-root>}"
+    if [[ -n "${2:-}" ]]; then
+        link_checkout "$2"
+    else
+        root="$(find_wavebid_root)" || exit 1
+        link_checkout "$root"
+    fi
 else
     link_user
 fi
