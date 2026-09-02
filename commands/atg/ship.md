@@ -137,7 +137,7 @@ git diff origin/main...HEAD --name-only
 2. **If no matching `.changeset/*.md` is present:**  
    - **Stop** before push/PR creation.  
    - Tell the user to either:
-     - Run **`/gsd/changeset-wavebid-a2o`** in Cursor, or **`/atg:changeset`** (pointer) / follow [`.cursor/commands/gsd/changeset-wavebid-a2o.md`](../../../../.cursor/commands/gsd/changeset-wavebid-a2o.md), **or**
+     - Run **`/gsd/changeset-wavebid-a2o`** in Cursor, or **`/atg:changeset`** (pointer) / follow `.cursor/commands/gsd/changeset-wavebid-a2o.md`, **or**
      - Confirm explicitly that they will add the **`skip-changelog`** label to the PR (infra-only, test-only, docs-only, etc.).  
    - **Do not** proceed to Step 9 (push) until the user commits a changeset file or explicitly confirms `skip-changelog`.
 
@@ -147,7 +147,7 @@ git diff origin/main...HEAD --name-only
 
 ### Step 6: Read the PR template
 
-Read the monorepo PR template from `../pull_request_template.md` (relative to the service root, i.e. the repo root's `pull_request_template.md`).
+Read the monorepo PR template from `pull_request_template.md` at the monorepo root (`../pull_request_template.md` if the session's cwd is `wavebid-a2o-service`).
 
 **Critical:** Never replace or omit the checklist from the template. The ATG-specific content is prepended **above** `#### Requirements`.
 
@@ -346,7 +346,7 @@ Step 4: Files changed (8)
   api/       2 files
   test/      3 files
 Step 5: Changeset pre-flight  ✅ (.changeset/wbpr-4032-*.md present, or skip-changelog confirmed)
-Step 6: PR template           ✅ (read from ../pull_request_template.md)
+Step 6: PR template           ✅ (read from pull_request_template.md)
 Step 7: PR body               ✅ (built — 42 lines)
 Step 8: PR title              WBPR-4032: [Branch 2/3] Service layer + unit tests
 Step 9: Push + create PR      ✅ git push -u origin fc/WBPR-4032-service-layer; gh pr create

@@ -106,7 +106,7 @@ Output a **numbered checklist** the implementer can tick off:
 - [ ] **If this is the last branch**: fill in `## As-built` in `implementation-plan.md` using the **pointer + delta pattern** — do not re-document layers that matched the plan:
   - **No deviations**: write `"Implemented as planned — see [Branch N: Changes](#branch-strategy). No deviations. Quality gates: ✅ tests, ✅ detekt, ✅ CodeNarc, ✅ koverVerify."`
   - **Deviations exist**: list only what changed from the plan (added file, dropped field, renamed method); leave unchanged layers undocumented.
-  After filling, sync both copies: overwrite `.claude/plans/{TICKET}-{slug}.md` and `../.cursor/plans/{TICKET}.md`.
+  After filling, sync the repo-committed plan: overwrite `wavebid-a2o-service/.claude/plans/{TICKET}-{slug}.md` (and `.cursor/plans/{TICKET}.md` at the monorepo root if one exists for this ticket).
 - [ ] `/atg:ship {TICKET} --branch {N}`
 ```
 
@@ -119,7 +119,7 @@ everything and split it retroactively; work to the order so each commit is genui
 If the real work diverges from the proposed order, say so and revise the order, do not silently
 abandon it.
 
-- Match existing codebase patterns (see `CLAUDE.md`, `.claude/rules/service-patterns.md`)
+- Match existing codebase patterns (see `wavebid-a2o-service/CLAUDE.md` and the numbered rule docs in `wavebid-a2o-service/.claude/rules/`)
 - Kotlin: expression bodies where appropriate, `OrThrow`/`OrNull`, `mu.KotlinLogging`
 - Tests: Groovy/Spock only for new tests; follow CodeNarc rules
 - Run **targeted** `./gradlew test --tests '…'` for the specs you touched when practical; full **`/atg:verify`** remains the pre-ship gate
@@ -128,7 +128,7 @@ abandon it.
 
 PRs that touch `wavebid-a2o-service/` or `wavebid-a2o-ui/` need a `.changeset/*.md` file (CI) unless the PR will have the **`skip-changelog`** label.
 
-- **Cursor:** run **`/gsd/changeset-wavebid-a2o`** — full procedure in monorepo [`.cursor/commands/gsd/changeset-wavebid-a2o.md`](../../../../.cursor/commands/gsd/changeset-wavebid-a2o.md)
+- **Cursor:** run **`/gsd/changeset-wavebid-a2o`** — full procedure in monorepo `.cursor/commands/gsd/changeset-wavebid-a2o.md`
 - **Claude Code / no Cursor:** run **`/atg:changeset`** (short pointer to the same rules) or open that file and follow it manually
 
 Never run interactive `pnpm changeset` from an agent session without a TTY; the GSD command writes the file directly.
@@ -150,5 +150,5 @@ Never run interactive `pnpm changeset` from an agent session without a TTY; the 
 2. `/atg:verify`
 3. When the diff includes user-visible service or UI changes: add changeset (`/gsd/changeset-wavebid-a2o` or `/atg:changeset`) or confirm **`skip-changelog`** on the upcoming PR
 4. `/atg:story-gap {TICKET}`
-5. **Last branch only:** fill in `## As-built` in `implementation-plan.md` using the pointer + delta pattern — one line if no deviations (`"Implemented as planned — see Branch N"`), or list only what changed. `/atg:testing-doc` falls through to `## Branch strategy` when As-built says "as planned". Sync both copies: `.claude/plans/{TICKET}-{slug}.md` and `../.cursor/plans/{TICKET}.md`.
+5. **Last branch only:** fill in `## As-built` in `implementation-plan.md` using the pointer + delta pattern — one line if no deviations (`"Implemented as planned — see Branch N"`), or list only what changed. `/atg:testing-doc` falls through to `## Branch strategy` when As-built says "as planned". Sync the repo-committed plan: `wavebid-a2o-service/.claude/plans/{TICKET}-{slug}.md` (and `.cursor/plans/{TICKET}.md` at the monorepo root if one exists).
 6. `/atg:ship {TICKET} --branch {N}`
