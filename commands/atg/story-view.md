@@ -65,7 +65,7 @@ Resolve per the **jira-cli** skill: `acli jira workitem view {TICKET} --fields s
 These are best-effort — if a lookup fails or is ambiguous, show "not checked" rather than guessing:
 
 - **QA comment posted?** `acli jira workitem comment list --key {TICKET} --json` (or MCP fallback), look for a comment body containing `## QA Testing —`.
-- **Retro captured?** `grep -rl "{TICKET}" CLAUDE.md .claude/rules/*.md wavebid-a2o-service/.claude/rules/*.md wavebid-a2o-service/CLAUDE.md 2>/dev/null` — if any match, retro likely ran; if the grep errors or finds nothing, show "not found."
+- **Retro captured?** `git log --all --oneline --grep="chore(retro): capture learnings from {TICKET}"` — the commit `/atg:retro` offers at its last step, and the only signal that carries the ticket ID. The patterns retro appends are prose about the codebase and do not mention `{TICKET}`, so grepping the rule docs for the ticket would always come back empty. No commit means retro either never ran or the user declined the commit: show "unknown — re-run `/atg:retro {TICKET}` to confirm," never "not run."
 
 ### Step 7: No-plan fallback
 

@@ -1,5 +1,5 @@
 ---
-description: Post-merge retrospective — mine session artifacts and suggest durable patterns for the user to review and selectively add to CLAUDE.md and .claude/rules/
+description: Post-merge retrospective — mine session artifacts and suggest durable patterns for the user to review and selectively add to the service CLAUDE.md and .claude/rules/
 ---
 
 # Retro: Post-Merge Learning Capture
@@ -36,7 +36,7 @@ If the directory is not found, search `bin/stories/` recursively for `*{TICKET}*
 
 ### Step 2: Read deduplication baseline
 
-Read `.claude/rules/service-patterns.md` and `CLAUDE.md` to understand what patterns are already documented. **Never suggest a pattern that is already captured** — duplicates reduce signal.
+Read the numbered rule docs in `wavebid-a2o-service/.claude/rules/` and `wavebid-a2o-service/CLAUDE.md` to understand what patterns are already documented. **Never suggest a pattern that is already captured** — duplicates reduce signal.
 
 ### Step 3: Mine PR comments
 
@@ -95,24 +95,30 @@ Look for patterns in commit messages like `fix(detekt)`, `fix(codenarc)`, or mul
 
 Apply the "would this happen again?" test to every candidate. Only include patterns that:
 - Occurred in this story AND are general enough to recur in future stories
-- Are NOT already in `CLAUDE.md` or `.claude/rules/service-patterns.md`
+- Are NOT already in `wavebid-a2o-service/CLAUDE.md` or `wavebid-a2o-service/.claude/rules/`
 - Are concrete and actionable (not vague advice)
 
 For each candidate, note the suggested target file (for reference — the user decides):
 
+All rule docs live under `wavebid-a2o-service/.claude/rules/` (numbered by topic) — there is no
+root-level `CLAUDE.md` or `service-patterns.md` in this monorepo.
+
 | Pattern category | Suggested target file |
 |-----------------|----------------------|
-| Kotlin/Groovy style (Detekt, CodeNarc violations) | `.claude/rules/service-patterns.md` |
-| Coverage gaps (missed branch/line patterns) | `CLAUDE.md` |
-| Feature flag patterns | `.claude/commands/atg/feature-flag.md` |
-| ATG-specific Spring/Kotlin gotchas | `CLAUDE.md` |
-| Recurring reviewer feedback themes | `.claude/rules/service-patterns.md` |
-| Test fixture or Spock patterns | `CLAUDE.md` |
-| Liquibase/migration gotchas | `CLAUDE.md` |
+| Kotlin style, Detekt violations | `wavebid-a2o-service/.claude/rules/002-kotlin.md` or `403-detekt-extra-violations.md` |
+| Groovy/Spock style, CodeNarc violations, test fixtures | `wavebid-a2o-service/.claude/rules/101-test-patterns.md` or `103-tests.md` |
+| Coverage gaps (missed branch/line patterns) | `wavebid-a2o-service/.claude/rules/402-backend-quality-checks.md` |
+| Feature flag patterns | `wavebid-a2o-service/.claude/rules/303-feature-flags.md` |
+| ATG-specific Spring/Kotlin gotchas | `wavebid-a2o-service/.claude/rules/302-spring-boot.md` |
+| Recurring reviewer feedback themes | `wavebid-a2o-service/CLAUDE.md` |
+| Liquibase/migration gotchas | `wavebid-a2o-service/.claude/rules/202-postgresql-migrations.md` or `203-liquibase-formatting.md` |
+
+A pattern that belongs to the `/atg:*` commands themselves (not the codebase) goes in the kit
+instead: edit the command in `~/ATG/atg-agent-kit/commands/atg/` and re-run `link.sh`.
 
 ### Step 7: Present patterns for review — STOP and wait
 
-**Do NOT write anything to `CLAUDE.md`, `service-patterns.md`, or any other file.**
+**Do NOT write anything to `CLAUDE.md`, a rule doc, or any other file.**
 
 Print the full pattern report and stop. The user will decide what to add:
 
@@ -143,7 +149,7 @@ Source: {PR comment / commit / plan delta}
 === To apply ===
 Review the patterns above and add the ones you want to keep:
   - Copy the text and paste into the suggested file, or
-  - Tell me "add pattern 1 to service-patterns.md" and I'll do it for you.
+  - Tell me "add pattern 1 to 002-kotlin.md" and I'll do it for you.
 
 Nothing has been written yet.
 ```
@@ -176,7 +182,7 @@ Commit the changes to {file(s)}?
 
 Do not suggest a pattern for:
 - One-off decisions specific to this story's domain
-- Patterns already in `CLAUDE.md` or `service-patterns.md`
+- Patterns already in `wavebid-a2o-service/CLAUDE.md` or a rule doc under `wavebid-a2o-service/.claude/rules/`
 - Reviewer preferences that contradict the codebase's established conventions
 - Changes made to satisfy a single reviewer who later retracted the comment
 
@@ -193,14 +199,14 @@ Do not suggest a pattern for:
 === Suggested patterns (2 candidates) ===
 
 ──────────────────────────────────────────────────────────────
-Pattern 1 of 2 — suggested target: .claude/rules/service-patterns.md
+Pattern 1 of 2 — suggested target: wavebid-a2o-service/.claude/rules/002-kotlin.md
 Source: PR #451 reviewer comment (acted on in commit a2b77e4)
 
 - When a service method returns `null` for not-found, always log before returning:
   `LOG.info { "Entity $id not found" }; return null` — otherwise Detekt's `EmptyFunctionBlock`
   rule may fire on the logger-less path and CodeNarc can miss implicit null returns in Groovy specs.
 ──────────────────────────────────────────────────────────────
-Pattern 2 of 2 — suggested target: CLAUDE.md
+Pattern 2 of 2 — suggested target: wavebid-a2o-service/CLAUDE.md
 Source: Implementation plan delta — Liquibase migration added late (not in original LOC estimate)
 
 - Liquibase migrations must be included in the LOC estimate during story-plan. Forgetting them
@@ -211,7 +217,7 @@ Source: Implementation plan delta — Liquibase migration added late (not in ori
 === To apply ===
 Review the patterns above and add the ones you want to keep:
   - Copy the text and paste into the suggested file, or
-  - Tell me "add pattern 1 to service-patterns.md" and I'll do it for you.
+  - Tell me "add pattern 1 to 002-kotlin.md" and I'll do it for you.
 
 Nothing has been written yet.
 ```

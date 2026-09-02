@@ -9,6 +9,8 @@ any cwd or worktree.
 - [Commands](#commands) — 20 `/atg:*` slash commands, what each does, and how they chain
   together, with a diagram. See [`docs/example-story-walkthrough.md`](docs/example-story-walkthrough.md)
   for one story followed through the whole timeline with example output at each step.
+  Per-command detail (usage, flags, exact outputs) lives in
+  [`commands/atg/README.md`](commands/atg/README.md).
 - [Skills](#skills) — 6 flat skill directories (flattened from the repo's nested
   `skills/atg/<name>/` layout, which wasn't discovered at that nesting depth).
 - `link.sh` — idempotent installer (see [Install](#install-user-level-any-machine) below).

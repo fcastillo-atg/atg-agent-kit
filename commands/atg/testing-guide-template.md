@@ -1,3 +1,7 @@
+---
+description: The canonical TESTING-GUIDE.md template that /atg:testing-doc fills in — reference content, not a command to run on its own
+---
+
 # TESTING-GUIDE.md — Canonical Template
 
 Fill every `{placeholder}`. Follow section order exactly. Three zones: Quick reference, Shared setup, Scenarios.

@@ -1,175 +1,16 @@
-# ATG Custom Commands (Cursor — monorepo mirror)
+# `/atg:*` command reference
 
-**Canonical directory:** `~/ATG/atg-agent-kit/commands/atg/` (git-tracked). The paths under `wavebid-a2o` (`.claude/commands/atg`, `.cursor/commands/atg`, and the `wavebid-a2o-service/` equivalents) plus `~/.claude/commands/atg/` are all symlinks into it. Run `~/ATG/atg-agent-kit/link.sh` after adding or removing a command.
+**Canonical directory:** `~/ATG/atg-agent-kit/commands/atg/` (git-tracked, the single source of
+truth). `link.sh` deploys **real file copies** from here — `<wavebid-root>/.claude/commands/atg/`
+for Claude Code (project scope, frontmatter intact) and `~/.cursor/commands/atg-*.md` for Cursor
+(user scope, frontmatter stripped). Neither is a symlink, so **re-run `~/ATG/atg-agent-kit/link.sh`
+after editing any command here.** Only the skills are symlinked.
 
-This namespace contains project-specific commands for the wavebid-a2o-service Spring Boot application.
+For the lifecycle overview, the workflow diagram, the skills table and install instructions, see
+the [kit README](../../README.md). This file is the per-command reference.
 
-## Workflow Overview
-
-### Lifecycle at a glance
-
-| Phase | Command | Required? | Key output |
-|-------|---------|-----------|------------|
-| **Pre-planning** | `/atg:brief` | Optional (complex/risky tickets) | `## Pre-Analysis` + **`## Next ATG command`** (footer) in `implementation-plan.md` |
-| **Planning** | `/atg:story-plan` | Always | `implementation-plan.md` (branches + `## As-built` placeholder + **`## Next ATG command`** replaces brief footer) |
-| **Implementation** *(repeat per branch)* | `/atg:story-impl` | Always | Numbered work queue for branch N |
-| | `/atg:feature-flag` | If user-facing change | `*FeatureFlag.kt` + wired service |
-| | *code the branch* | | — |
-| | `/atg:verify` | Always (loop until green) | Green quality gates |
-| | `/atg:pattern-check` | Recommended (advisory) | Findings table — antipatterns vs. existing code + rules |
-| | `/atg:changeset` | If `service/` or `ui/` changed | `.changeset/*.md` on branch |
-| | `/atg:story-gap` | Always (gates ship) | AC coverage table |
-| | *fill `## As-built`* | **Last branch only** | Plan updated with final shipped state |
-| | `/atg:ship` | Always | PR created; Jira → In Review |
-| **Review** *(per PR, may iterate)* | `/atg:review-feedback` | When comments arrive | Fixes applied + in-thread replies posted |
-| | `/atg:verify` | After every fix cycle | Green quality gates |
-| **Documentation** *(before or after merge)* | `/atg:testing-doc` | After last branch coded | `TESTING-GUIDE.md` (reads `## As-built`) |
-| | `/atg:test-run` | Recommended | Executes scenarios via curl; `TESTING-PROGRESS.md` |
-| | `/atg:qa-comment` | After `/atg:test-run` passes | QA-ready HTTP comment posted to Jira |
-| **Post-merge** | `/atg:retro` | After all PRs merged | Patterns appended to `CLAUDE.md` |
-| **Anytime** | `/atg:status` | On-demand | Branch state + CI + Jira snapshot |
-| | `/atg:story-view` | On-demand | Read-only visual dashboard (Artifact link) of a story's full lifecycle position |
-| | `/atg:explain` | On-demand | Plain-language “what am I merging?” brief with before/after examples; writes `EXPLAIN.md` under the story dir when it exists |
-| **Shortcut** | `/atg:story-auto-run` | Optional, one branch at a time | Chains brief → story-plan → story-impl → (feature-flag) → verify → pattern-check → (changeset) → story-gap → (As-built, last branch) → testing-doc (last branch); stops at a hard blocker; never runs `ship` or `qa-comment` |
-
----
-
-### Flow diagram
-
-```
-┌─ PRE-PLANNING (optional) ──────────────────────────────────────────────────┐
-│  /atg:brief [--auto | --discuss]                                           │
-│    └─ writes ## Pre-Analysis → implementation-plan.md                     │
-└────────────────────────────────────────────────────────────────────────────┘
-                              ↓
-┌─ PLANNING ─────────────────────────────────────────────────────────────────┐
-│  /atg:story-plan                                                           │
-│    └─ writes implementation-plan.md                                        │
-│         ├─ ## Branch strategy  (N branches, each ~≤500 LOC)               │
-│         └─ ## As-built         (placeholder — fill after last branch)     │
-└────────────────────────────────────────────────────────────────────────────┘
-                              ↓
-┌─ IMPLEMENTATION  ── repeat for each branch (Branch 1 → Branch N) ─────────┐
-│                                                                            │
-│  /atg:story-impl [--branch N]                                             │
-│    └─ work queue: files, ACs, feature-flag-first rule                     │
-│                              ↓                                             │
-│  [if user-facing change]                                                   │
-│  /atg:feature-flag                                                         │
-│    └─ *FeatureFlag.kt  (interface + Noop + Enabled + ProxyFactory)        │
-│                              ↓                                             │
-│  ┌── code the branch ──────────────────────────────────────────────────┐  │
-│  │  edit Kotlin / Groovy / SQL / Liquibase                             │  │
-│  └─────────────────────────────────────────────────────────────────────┘  │
-│                              ↓                                             │
-│  /atg:verify                      ← loop until all gates green (max 3×)   │
-│    ├─ [db/changelog changed] liquibaseUpdate                               │
-│    ├─ ./gradlew test                                                       │
-│    ├─ ./gradlew detektMain detektTest                                      │
-│    ├─ ./gradlew codenarcTest                                               │
-│    └─ ./gradlew koverVerify  (≥85% branch, ≥95% line)                    │
-│                              ↓                                             │
-│  /atg:pattern-check [--branch N]        ← advisory, never blocks       │
-│    ├─ rules pass: diff vs. .claude/rules/*.md                             │
-│    └─ codebase pass: diff vs. 2-3 comparable existing implementations    │
-│                              ↓                                             │
-│  [if service/ or ui/ changed]                                              │
-│  /atg:changeset  →  .changeset/*.md  (or plan skip-changelog on PR)       │
-│                              ↓                                             │
-│  /atg:story-gap [--branch N]                                               │
-│    ├─ ✅ AC covered + tested  →  proceed                                   │
-│    ├─ ⚠️  AC covered, no test  →  proceed (review recommended)            │
-│    └─ ❌ AC missing            →  BLOCKED — fix before ship               │
-│                              ↓                                             │
-│  [last branch only]                                                        │
-│  fill ## As-built in implementation-plan.md        ← /atg:ship reminds   │
-│    └─ document final state: DB · entity · API · repo · handler · SQL      │
-│                              ↓                                             │
-│  /atg:ship [--branch N]                                                    │
-│    ├─ As-built check  (warns if missing on last branch)                   │
-│    ├─ changeset pre-flight  (blocks if .changeset missing + no label)     │
-│    ├─ reads pull_request_template.md + prepends ATG summary block         │
-│    ├─ git push -u origin HEAD                                              │
-│    ├─ gh pr create                                                         │
-│    └─ Jira → "In Review"                                                  │
-│                              ↓                                             │
-│  ┌── if more branches remain ─────────────────────────────────────────┐   │
-│  │  repeat IMPLEMENTATION block for Branch N+1                        │   │
-│  └─────────────────────────────────────────────────────────────────────┘  │
-└────────────────────────────────────────────────────────────────────────────┘
-                              ↓
-┌─ REVIEW  ── per PR, may iterate ───────────────────────────────────────────┐
-│  /atg:review-feedback {PR_NUMBER}                                         │
-│    ├─ fetch: inline review + timeline + bot comments                      │
-│    ├─ classify: ✅ fix · ✅ answer · ⚠️ stale · ❌ skip                   │
-│    ├─ print review matrix  →  STOP (wait for confirmation)                │
-│    ├─ apply ✅ fix items                                                   │
-│    ├─ /atg:verify  (full gates — not just detekt)                         │
-│    ├─ ask before posting replies in-thread (one reply per comment)        │
-│    └─ ask before commit + push                                             │
-│                              ↓                                             │
-│  ┌── if reviewer requests more changes ───────────────────────────────┐   │
-│  │  repeat REVIEW block                                               │   │
-│  └─────────────────────────────────────────────────────────────────────┘  │
-└────────────────────────────────────────────────────────────────────────────┘
-                              ↓
-┌─ DOCUMENTATION + QA  ── before OR after merge, either order works ─────────┐
-│  /atg:testing-doc [--with-scenarios]                                      │
-│    ├─ reads ## As-built  (source of truth for post-implementation state)  │
-│    ├─ falls back to src/ files if ## As-built missing                     │
-│    └─ writes testing/TESTING-GUIDE.md  (+scenarios/*.http if flagged)    │
-│                              ↓                                             │
-│  /atg:test-run {TICKET}                     ← useful pre-merge too       │
-│    ├─ executes every shared-setup + scenario step via curl                │
-│    ├─ asserts status codes + field values, extracts {{variables}}         │
-│    └─ writes testing/TESTING-PROGRESS.md                                  │
-│                              ↓                                             │
-│  /atg:qa-comment {TICKET}                   ← gated on test-run passing  │
-│    ├─ builds Postman-format HTTP steps from TESTING-GUIDE.md              │
-│    ├─ shows draft, waits for explicit approval                            │
-│    └─ posts comment to Jira (for QA to verify on dev/stage)               │
-└────────────────────────────────────────────────────────────────────────────┘
-                              ↓  (all PRs merged)
-┌─ POST-MERGE ───────────────────────────────────────────────────────────────┐
-│  /atg:retro                                                               │
-│    ├─ mines PR comments + ## As-built + Detekt/CodeNarc patterns          │
-│    ├─ extracts durable patterns (not one-off decisions)                   │
-│    └─ appends to CLAUDE.md / .claude/rules/service-patterns.md           │
-└────────────────────────────────────────────────────────────────────────────┘
-
-  /atg:status  ─── usable at any point ──────────────────────────────────────
-    └─ reads ## Branch strategy  →  queries gh + Jira  →  prints state table
-
-  /atg:explain ─── usable at any point ──────────────────────────────────────
-    └─ ticket + branch/PR diff → plain-language brief + before/after examples
-```
-
-### Command flow (Mermaid)
-
-```mermaid
-flowchart TD
-    BRIEF["/atg:brief"] -->|optional| PLAN["/atg:story-plan"]
-    PLAN --> IMPL["/atg:story-impl"]
-    IMPL --> FLAG["/atg:feature-flag"]
-    IMPL -.->|no flag needed| VERIFY
-    FLAG --> VERIFY["/atg:verify"]
-    VERIFY --> REVIEWCODE["/atg:pattern-check"]
-    REVIEWCODE --> CHANGESET["/atg:changeset"]
-    CHANGESET --> GAP["/atg:story-gap"]
-    GAP --> SHIP["/atg:ship"]
-    SHIP -->|next branch| IMPL
-    SHIP -->|last branch| REVIEWFB["/atg:review-feedback"]
-    REVIEWFB -->|changes requested| VERIFY
-    REVIEWFB --> TESTDOC["/atg:testing-doc"]
-    TESTDOC --> TESTRUN["/atg:test-run"]
-    TESTRUN --> QACOMMENT["/atg:qa-comment"]
-    QACOMMENT -->|all PRs merged| RETRO["/atg:retro"]
-
-    STATUS["/atg:status (anytime)"]
-    EXPLAIN["/atg:explain (anytime)"]
-```
-
-### `## As-built` data flow
+These commands are specific to ATG's wavebid-a2o monorepo (Spring Boot 3.x, Kotlin + Groovy/Spock).
+## `## As-built` data flow
 
 `## As-built` is a section in `implementation-plan.md` that captures the **final shipped state** of every changed layer. It is the connective tissue between the implementation commands and the documentation commands.
 
@@ -389,7 +230,7 @@ Cross-references the diff against existing codebase patterns and project rule do
 
 **What it does:**
 - Summarizes the CI rule: PRs that change `wavebid-a2o-service/` or `wavebid-a2o-ui/` need a `.changeset/*.md` file unless the PR has **`skip-changelog`**
-- Points to **`/gsd/changeset-wavebid-a2o`** and [`.cursor/commands/gsd/changeset-wavebid-a2o.md`](../../../../.cursor/commands/gsd/changeset-wavebid-a2o.md) for the full write-and-stage procedure (no interactive `pnpm changeset` in agent sessions)
+- Points to **`/gsd/changeset-wavebid-a2o`** and `.cursor/commands/gsd/changeset-wavebid-a2o.md` (monorepo root) for the full write-and-stage procedure (no interactive `pnpm changeset` in agent sessions)
 
 ---
 
@@ -424,8 +265,8 @@ Creates a pull request after `/atg:verify` passes. Respects the monorepo PR temp
 **What it does:**
 - Confirms verify passed and working tree is clean
 - Reads `bin/stories/{year}/{month}/{TICKET}-{slug}/implementation-plan.md` for branch context (`## Branch strategy`)
-- **Changeset pre-flight:** if the diff touches `wavebid-a2o-service/` or `wavebid-a2o-ui/`, requires a `.changeset/*.md` on the branch (or explicit confirmation of **`skip-changelog`** on the PR) before push — same idea as [`.github/workflows/changeset-check.yml`](../../../../.github/workflows/changeset-check.yml)
-- Reads `../pull_request_template.md` (monorepo root) as the base PR body
+- **Changeset pre-flight:** if the diff touches `wavebid-a2o-service/` or `wavebid-a2o-ui/`, requires a `.changeset/*.md` on the branch (or explicit confirmation of **`skip-changelog`** on the PR) before push — same idea as `.github/workflows/changeset-check.yml`
+- Reads `pull_request_template.md` (monorepo root) as the base PR body
 - Prepends ATG-specific summary block (Summary, Branch Strategy, Changes, Feature Flag, Testing) above `#### Requirements`
 - **Never replaces or omits the template checklist**
 - Runs `git push -u origin HEAD`
@@ -455,6 +296,28 @@ Unified PR comment classifier and resolver — human reviewers and bot comments 
 - Applies fixes for ✅ fix rows (Kotlin/Spock conventions), then **suggests** [`/atg:verify`](verify.md) (full test → Detekt → CodeNarc → Kover; Liquibase preflight when changelogs change)
 - **Asks** before posting replies on GitHub; posts **each** reply **in-thread** (`POST .../pulls/{n}/comments/{id}/replies` or issue-comment `replies`) — never one bundled PR summary comment
 - **Asks** before commit/push (unless `--push`); verify should be green first
+
+---
+
+### `/atg:pr-comment`
+Posts a single, concise inline review comment on a GitHub PR — one finding plus the proposed fix. The counterpart to `/atg:review-feedback`, which classifies and resolves comments that already exist.
+
+**Usage:**
+```bash
+/atg:pr-comment 456 src/main/kotlin/.../LotService.kt:42 "{finding}"
+/atg:pr-comment 456 src/main/kotlin/.../LotService.kt:42 "{finding}" --fix "{proposed fix}"
+```
+
+**What it does:**
+- Posts one inline comment anchored to a file and line in the PR's new file version
+- Keeps it to a finding plus a concrete fix — terse prose, no headers, no praise
+- Infers the PR, anchor and finding from the conversation when invoked without args
+- Never posts a bundled PR-level review comment
+
+---
+
+### `/atg:testing-guide-template`
+**Not a command to run** — the canonical `TESTING-GUIDE.md` template that `/atg:testing-doc` reads and fills in. It ships as a command file only so `testing-doc` can load it by name.
 
 ---
 
@@ -514,7 +377,7 @@ Plain-language “what am I merging?” brief — ticket intent, light tech surf
 ---
 
 ### `/atg:retro`
-Post-merge learning capture — promotes durable patterns into `CLAUDE.md` and `.claude/rules/`.
+Post-merge learning capture — mines the story's artifacts and **presents** durable patterns for you to accept or reject. Writes nothing on its own.
 
 **Usage:**
 ```bash
@@ -526,9 +389,9 @@ Post-merge learning capture — promotes durable patterns into `CLAUDE.md` and `
 **What it does:**
 - Mines PR comments, implementation plan scope notes, and Detekt/CodeNarc patterns
 - Extracts patterns that are general and recurrent (not one-off)
-- Routes each pattern to: `CLAUDE.md`, `.claude/rules/service-patterns.md`, or `feature-flag.md`
-- Appends only — never rewrites existing content
-- Commits: `chore(retro): capture learnings from {TICKET} [date]`
+- Suggests a target for each: a numbered rule doc under `wavebid-a2o-service/.claude/rules/`, or `wavebid-a2o-service/CLAUDE.md`
+- **Stops and waits** — writes only the patterns you pick, appending, never rewriting
+- Offers one commit at the end: `chore(retro): capture learnings from {TICKET} [date]`
 
 ---
 
@@ -585,15 +448,15 @@ These commands are specific to ATG's wavebid-a2o project and follow internal con
 - Specific code quality thresholds (85% branch, 95% line)
 - Project-specific static analysis rules (Detekt, CodeNarc)
 - Multi-branch LOC-tiered story splitting
-- Monorepo PR template at `../pull_request_template.md`
-- Product changelog via [Changesets](../../../../.changeset/README.md): use **`/gsd/changeset-wavebid-a2o`** (or **`/atg:changeset`** then the linked doc) before **`/atg:ship`** when service or UI behavior changes; otherwise add **`skip-changelog`** on the PR
+- Monorepo PR template at `pull_request_template.md` (monorepo root)
+- Product changelog via Changesets (`.changeset/README.md`): use **`/gsd/changeset-wavebid-a2o`** (or **`/atg:changeset`** then the linked doc) before **`/atg:ship`** when service or UI behavior changes; otherwise add **`skip-changelog`** on the PR
 
 ## Adding New Commands
 
 To add a new command to this namespace:
-1. Create a new `.md` file in `.cursor/commands/atg/` (the canonical directory — symlinked everywhere)
-2. The command will automatically be available as `/atg:command-name`
-3. Update this README with the new command
+1. Create a new `.md` file in `~/ATG/atg-agent-kit/commands/atg/`, with YAML frontmatter carrying a one-line `description` (Claude Code and Cursor both render it in the picker)
+2. Run `~/ATG/atg-agent-kit/link.sh` (user level) and `link.sh --checkout <wavebid-root>` — the deploy is a copy, so nothing appears until you do
+3. Document it in this README and in the kit README's command table
 
 ## Command Structure
 
@@ -602,5 +465,5 @@ All commands in this namespace follow these conventions:
 - Include clear context and instructions
 - End with a `## Next Steps` block pointing to the next command
 - Provide examples and templates
-- Follow project coding standards (CLAUDE.md)
+- Follow project coding standards (`wavebid-a2o-service/CLAUDE.md` and `wavebid-a2o-service/.claude/rules/`)
 - Support `--dry-run` where destructive or irreversible actions are involved
