@@ -464,8 +464,9 @@ Ready to commit!
 ## Next Steps
 
 1. All gates green → commit and push: `git push -u origin {branch}`
-2. `/atg:story-gap {TICKET}` — confirm AC coverage before opening the PR
-3. On the last (or only) branch: `/atg:testing-doc {TICKET}` — generate `TESTING-GUIDE.md` while the diff is fresh
-4. Create PR: `/atg:ship {TICKET} [--branch N]`
-5. If tests fail locally that pass in CI: check for flaky tests (seed data, ordering)
-6. When PR is merged: `/atg:retro {TICKET}`
+2. `/atg:pattern-check {TICKET} [--branch N]` — advisory: cross-references the diff against comparable existing code and the `.claude/rules/` docs. Never blocks; use judgment on which findings are worth acting on
+3. `/atg:story-gap {TICKET}` — confirm AC coverage before opening the PR
+4. On the last (or only) branch: `/atg:testing-doc {TICKET}` — generate `TESTING-GUIDE.md` while the diff is fresh
+5. Create PR: `/atg:ship {TICKET} [--branch N]`
+6. If tests fail locally that pass in CI: check for flaky tests (seed data, ordering)
+7. When PR is merged: `/atg:retro {TICKET}`

@@ -101,6 +101,7 @@ Output a **numbered checklist** the implementer can tick off:
 
 ### Verification (after code complete)
 - [ ] `/atg:verify`
+- [ ] `/atg:pattern-check {TICKET}` (advisory — never blocks)
 - [ ] If this PR changes user-visible behavior under `wavebid-a2o-service/` or `wavebid-a2o-ui/`: add a changeset (see Next Steps) or plan `skip-changelog` on the PR
 - [ ] `/atg:story-gap {TICKET}`
 - [ ] **If this is the last branch**: fill in `## As-built` in `implementation-plan.md` using the **pointer + delta pattern** — do not re-document layers that matched the plan:
@@ -140,6 +141,7 @@ Never run interactive `pnpm changeset` from an agent session without a TTY; the 
 | `/atg:story-plan` | Produces the artifacts this command consumes |
 | `/atg:feature-flag` | Use when branch 1 needs flag scaffolding |
 | `/atg:verify` | Quality gates after implementation |
+| `/atg:pattern-check` | Advisory diff-vs-codebase/rules check after verify |
 | `/gsd/changeset-wavebid-a2o` or `/atg:changeset` | Changelog file before ship (when in scope) |
 | `/atg:story-gap` | AC coverage before PR |
 | `/atg:ship` | Open PR (includes changeset pre-flight) |
@@ -148,7 +150,8 @@ Never run interactive `pnpm changeset` from an agent session without a TTY; the 
 
 1. Complete the work queue for this branch
 2. `/atg:verify`
-3. When the diff includes user-visible service or UI changes: add changeset (`/gsd/changeset-wavebid-a2o` or `/atg:changeset`) or confirm **`skip-changelog`** on the upcoming PR
-4. `/atg:story-gap {TICKET}`
-5. **Last branch only:** fill in `## As-built` in `implementation-plan.md` using the pointer + delta pattern — one line if no deviations (`"Implemented as planned — see Branch N"`), or list only what changed. `/atg:testing-doc` falls through to `## Branch strategy` when As-built says "as planned". Sync the repo-committed plan: `wavebid-a2o-service/.claude/plans/{TICKET}-{slug}.md` (and `.cursor/plans/{TICKET}.md` at the monorepo root if one exists).
-6. `/atg:ship {TICKET} --branch {N}`
+3. `/atg:pattern-check {TICKET} [--branch N]` — advisory: cross-references the diff against comparable existing code and the `.claude/rules/` docs. Never blocks
+4. When the diff includes user-visible service or UI changes: add changeset (`/gsd/changeset-wavebid-a2o` or `/atg:changeset`) or confirm **`skip-changelog`** on the upcoming PR
+5. `/atg:story-gap {TICKET}`
+6. **Last branch only:** fill in `## As-built` in `implementation-plan.md` using the pointer + delta pattern — one line if no deviations (`"Implemented as planned — see Branch N"`), or list only what changed. `/atg:testing-doc` falls through to `## Branch strategy` when As-built says "as planned". Sync the repo-committed plan: `wavebid-a2o-service/.claude/plans/{TICKET}-{slug}.md` (and `.cursor/plans/{TICKET}.md` at the monorepo root if one exists).
+7. `/atg:ship {TICKET} --branch {N}`
