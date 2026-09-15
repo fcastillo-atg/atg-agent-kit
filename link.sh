@@ -99,7 +99,16 @@ link_skills_to() {
     done
     local m=0
     for d in "$KIT"/skills/*/; do
-        ln -sfn "${d%/}" "$dest/$(basename "${d%/}")"
+        local name="$(basename "${d%/}")" target="$dest/$(basename "${d%/}")"
+        # ln -sfn replaces an existing symlink but nests INSIDE an existing real
+        # directory (e.g. a same-named skill installed independently of this kit).
+        # Detect that case and skip it loudly instead of writing a symlink one
+        # level too deep, which silently shadows nothing and confuses everyone.
+        if [[ -e "$target" && ! -L "$target" ]]; then
+            echo "  ! skipped $name: $target already exists and is not a symlink" >&2
+            continue
+        fi
+        ln -sfn "${d%/}" "$target"
         m=$((m + 1))
     done
     echo "$m"
