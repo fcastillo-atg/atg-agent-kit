@@ -1,158 +1,67 @@
 ---
-description: Verify all acceptance criteria from the story are addressed before shipping
+description: Verify every acceptance criterion from the story is addressed in the diff before shipping (blocks on a missing AC)
 ---
 
-# Story Gap: AC Coverage Check
+# Story gap: AC coverage
 
-**Purpose:** After implementation, check that every acceptance criterion from the Jira story is addressed in code and tests before running `/atg:ship`. Blocks shipping if any AC is missing.
+Check that every acceptance criterion has code and, ideally, a test in the diff. Blocks
+`/atg:ship` when any AC is missing.
 
 ## Usage
 
 ```bash
-/atg:story-gap {TICKET}              # check current branch against main
-/atg:story-gap {TICKET} --branch N  # scope check to branch N's changes only
+/atg:story-gap {TICKET}
+/atg:story-gap {TICKET} --branch N
 ```
 
-## Arguments
+Ticket, story directory, diff base, and `--branch` scoping: atg-story-artifacts skill.
 
-- `{TICKET}` — Jira ticket key (e.g. `WBPR-4032`)
-- `--branch N` — restrict diff to files changed in branch N (uses `implementation-plan.md` → `## Branch strategy` → `### Branch N:` to determine base)
+## Steps
 
-## Execution Steps
+1. Read the ACs from `{TICKET}-story.md`, or fetch from Jira per the jira-cli skill when the
+   file is missing. ACs appear as numbered items under "Acceptance Criteria", `- [ ]`
+   checkboxes, or a "Definition of Done" list.
+2. Read `implementation-plan.md` for planned scope to cross-reference against.
+3. Get the diff (`--name-only` and full).
+4. Classify each AC:
 
-### Step 1: Read the story
+| Status | Criteria |
+|---|---|
+| ✅ Implemented + tested | Relevant code change and a spec covering the behaviour, both in the diff |
+| ⚠️ Implemented, no test | Relevant code change, no matching test |
+| ❌ Missing | Nothing in the diff addresses it |
 
-Look for the story file at `bin/stories/{year}/{month}/{TICKET}-{slug}/{TICKET}-story.md`.
+Evidence heuristics:
 
-If the file exists, read it. If not, fetch the story from Jira per the **jira-cli** skill: `acli jira workitem view {TICKET} --fields summary,description,comment --json` first, falling back to `mcp__mcp-atlassian__jira_get_issue`.
+| AC mentions | Look for |
+|---|---|
+| endpoint, API | controller or route change |
+| service, business logic | service class change |
+| persist, store, database | repository or entity change |
+| validate | validator or `@Valid` |
+| flag | `*FeatureFlag.kt` |
+| migration, schema | `db/changelog/` file |
+| event, publish | RabbitMQ publisher or listener |
+| test | `*Spec.groovy` or `*Test.kt` |
 
-Extract all acceptance criteria — typically listed as:
-- Numbered items under an "Acceptance Criteria" heading
-- Checkbox items (`- [ ]`)
-- Items under a "Definition of Done" section
+When an AC is ambiguous and any plausible file is in the diff, lean to ⚠️ rather than ❌.
 
-### Step 2: Read the implementation plan
-
-Look for `bin/stories/{year}/{month}/{TICKET}-{slug}/implementation-plan.md`.
-
-If found, extract the planned ACs / technical scope — use this to cross-reference against the story ACs.
-
-### Step 3: Get the diff
-
-```bash
-git diff origin/main...HEAD --name-only     # files changed
-git diff origin/main...HEAD                 # full diff for evidence matching
-```
-
-If `--branch N` is provided, read `implementation-plan.md` (`## Merge strategy` / `### Branch N:`) to infer the base branch for branch N and scope the diff accordingly. If the plan does not spell out bases, fall back to comparing against `origin/main` and note the limitation.
-
-### Step 4: Evaluate each AC
-
-For each acceptance criterion, look for implementation evidence in:
-- **Files changed** — is there a file that could implement this AC?
-- **Diff content** — are there code additions relevant to this AC?
-- **Test files** — is there a Spock spec or test that covers this AC?
-
-Classify each AC as:
-
-| Status | Criteria | Indicator |
-|--------|----------|-----------|
-| ✅ Implemented + tested | Code change exists AND a test covers this behavior | File + test both in diff |
-| ⚠️ Implemented, no test | Code change exists but no test covers this path | File in diff, no matching test |
-| ❌ Missing | No code change found that addresses this AC | Absent from diff |
-
-### Step 5: Output coverage table
-
-Print the full AC coverage table:
+5. Print the table and verdict.
 
 ```
 Story Gap Analysis — {TICKET}
-Diff: origin/main...HEAD  ({N} files changed)
+Diff: origin/main...HEAD ({N} files changed)
 
 | # | Acceptance Criterion | Status | Evidence |
 |---|----------------------|--------|----------|
-| 1 | {AC text} | ✅ Implemented + tested | `src/.../LotService.kt:45`, `LotServiceSpec.groovy:89` |
-| 2 | {AC text} | ⚠️ Implemented, no test  | `src/.../Controller.kt:12` |
-| 3 | {AC text} | ❌ Missing               | — |
+| 1 | {AC} | ✅ Implemented + tested | `LotService.kt:45`, `LotServiceSpec.groovy:89` |
+| 2 | {AC} | ❌ Missing | — |
 
-Coverage: {X}/{N} ACs addressed  |  {Y} tested  |  {Z} missing
+Coverage: {X}/{N} addressed | {Y} tested | {Z} missing
 ```
 
-### Step 6: Verdict
+- No ❌: `Story gap check passed.` Note how many are ⚠️ for review.
+- Any ❌: `Story gap check FAILED — do not ship.` List each missing AC with a one-line guess at
+  what it needs. Never invoke `/atg:ship` from here.
 
-**If all ACs are ✅ or ⚠️** (no ❌ Missing):
-```
-✅ Story gap check passed — all {N} ACs are addressed.
-   {Y} ACs have test coverage; {Z} have code but no test (review recommended).
-
-Proceed to: /atg:ship {TICKET} [--branch N]
-```
-
-**If any AC is ❌ Missing:**
-```
-❌ Story gap check FAILED — {Z} AC(s) missing from diff.
-
-Blocked: do NOT ship until missing ACs are addressed.
-Run /atg:verify after fixing, then re-run /atg:story-gap {TICKET}.
-```
-
-In the blocked case, do **not** invoke `/atg:ship` automatically.
-
-## Evidence Matching Heuristics
-
-Use these rules when matching diff content to ACs:
-
-| AC keyword | Look for in diff |
-|-----------|-----------------|
-| "endpoint" / "API" | Controller or route change |
-| "service" / "business logic" | Service class change |
-| "database" / "persist" / "store" | Repository or entity change |
-| "validate" / "validation" | Validator class or `@Valid` annotation |
-| "flag" / "feature flag" | `*FeatureFlag.kt` file |
-| "migration" / "schema" | `src/main/resources/db/changelog/` file |
-| "event" / "publish" | RabbitMQ or event publisher change |
-| "test" | `*Spec.groovy` or `*Test.kt` in diff |
-
-When an AC is ambiguous, lean toward ⚠️ (implemented, no test) rather than ❌ (missing) if there is *any* plausible file in the diff.
-
-## Example Session
-
-```
-/atg:story-gap WBPR-4032
-
-📖 Reading story from bin/stories/2026/04/WBPR-4032-lot-address/WBPR-4032-story.md...
-   Found 5 acceptance criteria.
-
-📋 Reading implementation plan...
-   3 planned components confirmed.
-
-🔍 Diff: origin/main...HEAD (12 files changed)
-
-Story Gap Analysis — WBPR-4032
-==============================
-
-| # | Acceptance Criterion                                  | Status                    | Evidence                                                  |
-|---|-------------------------------------------------------|---------------------------|-----------------------------------------------------------|
-| 1 | Lot inherits address from auction when null           | ✅ Implemented + tested    | LotService.kt:45, LotServiceSpec.groovy:89                |
-| 2 | Lot retains custom address when explicitly set        | ✅ Implemented + tested    | LotService.kt:52, LotAddressSpec.groovy:112               |
-| 3 | Feature flag FF_lot_address_inheritance controls gate | ✅ Implemented + tested    | LotAddressInheritanceFeatureFlag.kt, FeatureFlagSpec.groovy |
-| 4 | PUT /lots/{id} updates inherited address on update    | ⚠️ Implemented, no test    | LotController.kt:78                                       |
-| 5 | Existing lots not affected by migration               | ❌ Missing                  | —                                                         |
-
-Coverage: 4/5 ACs addressed  |  3 tested  |  1 missing
-
-❌ Story gap check FAILED — 1 AC missing from diff.
-
-Missing:
-  AC 5: "Existing lots not affected by migration"
-  → Likely needs a Liquibase migration with data preservation check and a repository integration test.
-
-Blocked: do NOT ship until missing ACs are addressed.
-```
-
-## Next Steps
-
-1. Fix any Missing ACs, re-run `/atg:verify`
-2. Re-run `/atg:story-gap {TICKET}` to refresh the coverage table
-3. When all ACs are ✅ or ⚠️ and this is the last (or only) branch: `/atg:testing-doc {TICKET}`
-4. `/atg:ship {TICKET} --branch {N}`
+**Next:** last branch: fill `## As-built` then `/atg:testing-doc {TICKET}`; otherwise `/atg:ship {TICKET} --branch N`
