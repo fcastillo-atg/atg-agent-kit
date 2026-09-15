@@ -1,157 +1,89 @@
 ---
-description: Execute the story-plan for the current branch — align git state, build a work queue from implementation-plan.md
+description: Execute the story plan for the current branch: align git state, build a work queue from implementation-plan.md, implement it
 ---
 
-# Story impl: Execute Story Plan (Current Branch)
+# Story impl
 
-**Purpose:** Bridge `/atg:story-plan` artifacts to hands-on coding. Reads `implementation-plan.md` (including `## Branch strategy` and `### Branch N:` sections), confirms the git branch matches the planned slice, produces an ordered work queue for **this branch only**, then **implements that queue in the same session** (code + tests) unless the user explicitly asks for a checklist only (e.g. `--queue-only` or “just the work queue”). After implementation, run **`/atg:verify`** (or targeted `./gradlew test`) — this command does not replace the full verify gate.
+Bridge `/atg:story-plan` to code. Read the `### Branch N:` slice, confirm the git branch matches,
+emit an ordered work queue for this branch only, then implement it in the same session unless
+`--queue-only`. Does not replace `/atg:verify`.
 
 ## Usage
 
 ```bash
-/atg:story-impl                    # infer {TICKET} from branch or bin/stories
-/atg:story-impl WBPR-4032          # explicit ticket
-/atg:story-impl WBPR-4032 --branch 2   # which planned branch you are implementing
+/atg:story-impl                      # ticket inferred from branch or bin/stories
+/atg:story-impl WBPR-4032
+/atg:story-impl WBPR-4032 --branch 2 # which planned branch (default 1)
+/atg:story-impl WBPR-4032 --queue-only   # print the checklist, edit nothing
 ```
 
-## Arguments
+## Steps
 
-- `{TICKET}` — optional if inferrable from `fc/{TICKET}-*` or `bin/stories/**/*{TICKET}*`
-- `--branch N` — which branch number from `## Branch strategy` in `implementation-plan.md` (default: 1 if single-branch story)
-- `--queue-only` — print the checklist only; do **not** edit source (for human-driven implementation)
+### 1. Load artifacts
 
-## Execution Steps
+Resolve the ticket and story directory per the **atg-story-artifacts** skill. Read
+`implementation-plan.md` (Pre-Analysis, Branch strategy, testing, merge strategy) and
+`{TICKET}-story.md` for ACs. If the plan is missing, stop: run `/atg:story-plan {TICKET}` first.
 
-### Step 1: Resolve ticket and story directory
+### 2. Align the git branch
 
-1. If `{TICKET}` not provided:
-   - `git branch --show-current` — extract `WBPR-NNNN` from patterns like `fc/WBPR-4032-feature-name`
-   - Or search: `find bin/stories -type d -name '*WBPR-*' | head -5` and pick the directory matching active work
-2. Locate the story folder: `bin/stories/{year}/{month}/{TICKET}-{slug}/`
-   - If multiple matches, prefer the one containing `implementation-plan.md`
+Compare `git branch --show-current` with the planned name in `### Branch N:` (single-branch
+stories: the one branch, or infer from the plan title). If they differ, print expected versus
+actual and instruct `git checkout {planned}` or `git checkout -b {planned}` from main. Suggest
+`git fetch origin` if `origin/main` may be behind.
 
-### Step 2: Load artifacts
+### 3. Build the work queue
 
-Read (in order):
+From the `### Branch N:` block plus global context (`## Feature flag`, `## Story analysis`, LOC
+estimate) extract: ordered files to add or change with layer, the ACs this branch satisfies,
+testing notes, and a suggested commit order. Feature flag file and wiring come first on Branch 1
+when required.
 
-1. `implementation-plan.md` — full plan (including `## Pre-Analysis` if present from `/atg:brief`), **`## Branch strategy`** with per-branch `### Branch N:` sections, testing, merge strategy, summary
-2. `{TICKET}-story.md` — acceptance criteria (for cross-check while implementing)
+A branch is a unit of review, so always propose a commit order, reusing one sketched in the plan
+where present:
 
-**Gate:** If `implementation-plan.md` is missing, stop and tell the user to run `/atg:story-plan {TICKET}` first.
+1. Every commit compiles and passes its own tests; a reviewer can stop anywhere.
+2. Feature flag first, disabled, zero behaviour change.
+3. Additive before wiring: helpers, indexes, DTOs, pure functions land before callers.
+4. Tests travel with their subject, never a trailing "add tests" commit.
+5. One behaviour change per commit, naming the AC.
+6. Pure refactors stay separate and say so in the message.
 
-**Legacy:** If only `branch-strategy.md` exists (old folders) and `implementation-plan.md` is absent, tell the user to merge content into `implementation-plan.md` or re-run `/atg:story-plan {TICKET}` — do not rely on `branch-strategy.md` alone for new work.
-
-### Step 3: Align git branch with the plan
-
-1. Current branch: `git branch --show-current`
-2. From `implementation-plan.md`, under `## Branch strategy`, find the **`### Branch N:`** section for the requested `N` and read the **planned** git branch name (e.g. `` `fc/WBPR-4032-lot-address-flag` `` in the heading or body).
-3. For **single-branch** stories (no `## Branch strategy` or only one `### Branch 1:`), use that branch name or infer from the plan title and current work.
-4. If they differ:
-   - Print: expected vs actual
-   - Instruct: `git checkout {planned-branch}` or create from main: `git checkout -b {planned-branch}` following team naming
-5. If `origin/main` is behind, suggest: `git fetch origin` before comparing diffs
-
-### Step 4: Build work queue (this branch only)
-
-From `implementation-plan.md`, extract **only** the sections for branch `N`:
-
-- The `### Branch N:` block under `## Branch strategy` (files, changes, testing, AC, PR template)
-- Plus any global context from `## Feature flag`, `## Story analysis`, or `## Lines of code estimate` that applies to this slice
-- Ordered list of files to add or change (with layer: api, service, repository, domain, feature flag, migration)
-- Acceptance criteria that this branch must satisfy
-- If branch 1 and a feature flag is required: **feature flag file and wiring first** (per story-plan safety rules)
-- Testing notes: which specs or scenarios to add or extend
-- A **suggested commit order** (see below)
-
-**Always propose a suggested commit order.** A branch is a unit of review, not a unit of work: even
-a small slice reviews better as a few commits that each tell one story. This matters most when a
-branch lands above the ~500 LOC guideline, where it is the main thing keeping the PR reviewable,
-but it is worth doing at any size.
-
-Derive the order with these rules:
-
-1. **Every commit compiles and passes its own tests.** A reviewer must be able to stop at any commit.
-2. **Feature flag first**, disabled. Zero behaviour change.
-3. **Additive before wiring.** New helpers, indexes, DTOs and pure functions land before anything
-   calls them, so the commit that changes behaviour is small and obvious.
-4. **Tests travel with their subject**, not batched into a trailing "add tests" commit.
-5. **One behaviour change per commit.** Name the AC it satisfies.
-6. **Pure-refactor commits stay separate** from behaviour commits, and say so in the message.
-
-Where the plan has a `## Branch strategy` with a commit order already sketched, reuse it rather
-than inventing a new one. Where a branch was deliberately kept whole instead of split, slice the
-commit order along the seam the split would have used, so peeling it apart later stays cheap.
-
-Output a **numbered checklist** the implementer can tick off:
+Where a branch was kept whole instead of split, slice along the seam the split would have used.
 
 ```markdown
-## Work queue — Branch {N} of {M} — {short title}
+## Work queue — Branch {N} of {M} — {title}
 
 ### Prerequisites
-- [ ] On branch `{branch-name}`
-- [ ] Dependencies from earlier branches merged (if N > 1)
+- [ ] On branch `{name}`;  earlier branches merged (if N > 1)
 
 ### Suggested commit order
-1. [ ] {commit subject} — {what lands, which AC, why it is safe to stop here}
-2. [ ] ...
+1. [ ] {subject} — {what lands, which AC, why it is safe to stop here}
 
 ### Implementation
 1. [ ] {file or task}
-2. [ ] ...
 
 ### Verification (after code complete)
-- [ ] `/atg:verify`
-- [ ] `/atg:pattern-check {TICKET}` (advisory — never blocks)
-- [ ] If this PR changes user-visible behavior under `wavebid-a2o-service/` or `wavebid-a2o-ui/`: add a changeset (see Next Steps) or plan `skip-changelog` on the PR
+- [ ] `/atg:verify`, then `/atg:pattern-check {TICKET}` (advisory)
+- [ ] Changeset when service/ui paths change, see `/atg:changeset`
 - [ ] `/atg:story-gap {TICKET}`
-- [ ] **If this is the last branch**: fill in `## As-built` in `implementation-plan.md` using the **pointer + delta pattern** — do not re-document layers that matched the plan:
-  - **No deviations**: write `"Implemented as planned — see [Branch N: Changes](#branch-strategy). No deviations. Quality gates: ✅ tests, ✅ detekt, ✅ CodeNarc, ✅ koverVerify."`
-  - **Deviations exist**: list only what changed from the plan (added file, dropped field, renamed method); leave unchanged layers undocumented.
-  After filling, sync the repo-committed plan: overwrite `wavebid-a2o-service/.claude/plans/{TICKET}-{slug}.md` (and `.cursor/plans/{TICKET}.md` at the monorepo root if one exists for this ticket).
+- [ ] Last branch only: fill `## As-built` (below), sync `.claude/plans/{TICKET}-{slug}.md`
 - [ ] `/atg:ship {TICKET} --branch {N}`
 ```
 
-### Step 5: Execute (agent behavior)
+### 4. Implement
 
-Unless **`--queue-only`** (or the user asked only for the queue): **implement** every item in the checklist in order — create/modify production code and tests.
+Unless `--queue-only`, implement every Implementation item in order, committing along the
+suggested order rather than in one lump. If the work diverges from the order, say so and revise
+it. Follow the **atg-service-rules** skill. Run targeted `./gradlew test --tests '…'` for touched
+specs when practical; the full gate is `/atg:verify`.
 
-**Commit along the suggested commit order** rather than in one lump at the end. Do not stage
-everything and split it retroactively; work to the order so each commit is genuinely self-contained.
-If the real work diverges from the proposed order, say so and revise the order, do not silently
-abandon it.
+### 5. As-built (last branch only)
 
-- Match existing codebase patterns (see `wavebid-a2o-service/CLAUDE.md` and the numbered rule docs in `wavebid-a2o-service/.claude/rules/`)
-- Kotlin: expression bodies where appropriate, `OrThrow`/`OrNull`, `mu.KotlinLogging`
-- Tests: Groovy/Spock only for new tests; follow CodeNarc rules
-- Run **targeted** `./gradlew test --tests '…'` for the specs you touched when practical; full **`/atg:verify`** remains the pre-ship gate
+Fill `## As-built` with the pointer + delta pattern per **atg-story-artifacts**: no deviations →
+`Implemented as planned — see Branch N: Changes. No deviations. Quality gates: tests, detekt,
+CodeNarc, koverVerify.`; deviations → list only what changed. Then overwrite
+`wavebid-a2o-service/.claude/plans/{TICKET}-{slug}.md` (and `.cursor/plans/{TICKET}.md` at the
+monorepo root if one exists).
 
-## Changeset (do not duplicate full procedure)
-
-PRs that touch `wavebid-a2o-service/` or `wavebid-a2o-ui/` need a `.changeset/*.md` file (CI) unless the PR will have the **`skip-changelog`** label.
-
-- **Cursor:** run **`/gsd/changeset-wavebid-a2o`** — full procedure in monorepo `.cursor/commands/gsd/changeset-wavebid-a2o.md`
-- **Claude Code / no Cursor:** run **`/atg:changeset`** (short pointer to the same rules) or open that file and follow it manually
-
-Never run interactive `pnpm changeset` from an agent session without a TTY; the GSD command writes the file directly.
-
-## Integration with Other Commands
-
-| Command | Role |
-|---------|------|
-| `/atg:story-plan` | Produces the artifacts this command consumes |
-| `/atg:feature-flag` | Use when branch 1 needs flag scaffolding |
-| `/atg:verify` | Quality gates after implementation |
-| `/atg:pattern-check` | Advisory diff-vs-codebase/rules check after verify |
-| `/gsd/changeset-wavebid-a2o` or `/atg:changeset` | Changelog file before ship (when in scope) |
-| `/atg:story-gap` | AC coverage before PR |
-| `/atg:ship` | Open PR (includes changeset pre-flight) |
-
-## Next Steps
-
-1. Complete the work queue for this branch
-2. `/atg:verify`
-3. `/atg:pattern-check {TICKET} [--branch N]` — advisory: cross-references the diff against comparable existing code and the `.claude/rules/` docs. Never blocks
-4. When the diff includes user-visible service or UI changes: add changeset (`/gsd/changeset-wavebid-a2o` or `/atg:changeset`) or confirm **`skip-changelog`** on the upcoming PR
-5. `/atg:story-gap {TICKET}`
-6. **Last branch only:** fill in `## As-built` in `implementation-plan.md` using the pointer + delta pattern — one line if no deviations (`"Implemented as planned — see Branch N"`), or list only what changed. `/atg:testing-doc` falls through to `## Branch strategy` when As-built says "as planned". Sync the repo-committed plan: `wavebid-a2o-service/.claude/plans/{TICKET}-{slug}.md` (and `.cursor/plans/{TICKET}.md` at the monorepo root if one exists).
-7. `/atg:ship {TICKET} --branch {N}`
+**Next:** `/atg:verify`

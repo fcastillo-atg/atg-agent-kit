@@ -1,207 +1,88 @@
 ---
-description: Draft and post QA testing steps as a Jira comment — HTTP guide for QA to run on dev/stage after merge
+description: Draft a Postman-style QA testing comment from TESTING-GUIDE.md, wait for approval, post it to the Jira ticket
 ---
 
-# Post QA testing comment to Jira
+# QA comment
 
-After `/atg:test-run` confirms all scenarios pass locally, post a self-contained QA comment
-on the Jira ticket so QA can independently verify on dev/stage. Uses the same HTTP format
-as `TESTING-GUIDE.md` (Postman-compatible). Always shows a draft and waits for explicit
-approval before posting.
+Republish the story's `TESTING-GUIDE.md` as a self-contained Jira comment so QA can verify on
+dev or stage. Always show the draft and wait for an explicit `y` before posting. Vocabulary and
+Postman variable rules: **atg-testing-guide**. Paths and the never-reference-`bin/` rule:
+**atg-story-artifacts**.
 
 ## Usage
 
 ```bash
-/atg:qa-comment WBPR-4243               # draft → approve → post
-/atg:qa-comment WBPR-4243 --dry-run     # print draft only, do not post
+/atg:qa-comment {TICKET}              # draft → approve → post
+/atg:qa-comment {TICKET} --dry-run    # write and print the draft, never post
 ```
 
-## Execution Steps
+## Steps
 
-### Step 1: Locate source files
+1. **Locate sources** in the story's `testing/` directory.
 
-Auto-detect from ticket ID:
+   | File | Required | Used for |
+   |---|---|---|
+   | `TESTING-GUIDE.md` | yes | scenarios, overview, variables |
+   | `TESTING-PROGRESS.md` | no | "locally verified" footer |
+   | `../implementation-plan.md` | no | AC deferral notes from `## As-built` |
 
-```bash
-find bin/stories -path "*/{TICKET}*/testing/TESTING-GUIDE.md" | sort | head -1
-find bin/stories -path "*/{TICKET}*/testing/TESTING-PROGRESS.md" | sort | head -1
-find bin/stories -path "*/{TICKET}*/implementation-plan.md" | sort | head -1
-```
+   If the guide is missing, stop:
+   `No TESTING-GUIDE.md for {TICKET}. Run /atg:testing-doc {TICKET}, then /atg:test-run {TICKET}.`
 
-| File | Required? | Used for |
-|------|-----------|---------|
-| `testing/TESTING-GUIDE.md` | ✅ Required | Scenarios, overview, variables |
-| `testing/TESTING-PROGRESS.md` | Optional | Confirm all scenarios passed (footer note) |
-| `implementation-plan.md` | Optional | Scope / AC deferral notes from `## As-built` |
+2. **Detect PR state** with `gh pr list --search "{TICKET} in:title" --state all --json number,url,state`.
 
-The directory holding `TESTING-GUIDE.md` (`bin/stories/{year}/{month}/{TICKET}-*/testing/`) is this
-command's **output** location too — see Step 5. Never write the drafted comment to a scratchpad
-or temp path; it belongs alongside the other testing artifacts for this story.
+   | State | Environment line |
+   |---|---|
+   | MERGED | `**Environment:** dev / stage — [PR #{N}]({url}) already merged` |
+   | OPEN | `**Environment:** [Branch build — PR #{N}]({url}) — merge pending` |
+   | none | `**Environment:** dev / stage` and warn that no PR was found |
 
-**Gate:** If `TESTING-GUIDE.md` not found → stop with:
+3. **Extract from the guide.** Feature name from the title; "What changed" from `## Overview`;
+   variables from `## Shared setup steps`; one block per `### Scenario N` (method, endpoint,
+   body from Steps; assertions from Expected results); scope notes only where the overview or
+   edge cases flag an AC gap or deferral.
 
-```
-❌ No TESTING-GUIDE.md found for {TICKET}.
-Generate one first:  /atg:testing-doc {TICKET}
-Then verify locally: /atg:test-run {TICKET}
-```
+4. **Convert every request to Postman form.** `{{baseURL}}`, `{{token}}`, `{{houseId}}` inside
+   quoted strings. No `export`, `$VAR`, pipes, or `jq`. Steps that pick IDs become prose
+   ("copy `id` into `{{newItemId}}`"). Complete response body after each request, then one ✅
+   assertion line.
 
-### Step 2: Detect PR state → environment line
+   ```bash
+   curl -si "{{baseURL}}/api/v3/houses/{{houseId}}/{endpoint}" -H "Authorization: Bearer {{token}}"
 
-```bash
-gh pr list --search "{TICKET} in:title" --state all --json number,url,state
-```
+   curl -si -X POST "{{baseURL}}/api/v3/houses/{{houseId}}/{endpoint}" \
+     -H "Authorization: Bearer {{token}}" -H "Content-Type: application/json" \
+     -d '{ "field": "VALUE" }'
 
-| PR state | Environment line |
-|----------|-----------------|
-| `MERGED` | `**Environment:** dev / stage — [PR #{N}]({url}) already merged` |
-| `OPEN` | `**Environment:** [Branch build — PR #{N}]({url}) — merge pending` |
-| Not found | `**Environment:** dev / stage` *(warn user that PR was not found)* |
+   curl -si -X DELETE "{{baseURL}}/api/v3/houses/{{houseId}}/{endpoint}" -H "Authorization: Bearer {{token}}"
+   ```
 
-### Step 3: Extract content from TESTING-GUIDE.md
+5. **Assemble** using the template below, prose per the **unslop** skill. The AI-disclaimer line is mandatory in every comment
+   and must appear verbatim, never paraphrased. If `TESTING-PROGRESS.md` shows every scenario
+   PASS, append `*Locally verified — all {N} scenarios passed.*` without naming the file.
+   Grep the result for `bin/` and fix any hit.
 
-Parse these sections in order:
+   Write it to `testing/QA-COMMENT.md` now, including under `--dry-run`. This file is the
+   durable copy and the body that gets posted; re-runs overwrite it.
 
-| Content | Source in TESTING-GUIDE.md |
-|---------|---------------------------|
-| Feature name | `# {TICKET}: Manual testing ({Feature Name})` |
-| "What was added" | "What changed:" paragraph in `## Overview` |
-| Variable list | `@baseURL`, `@token`, `@houseId`, `@auctionId`, etc. from `## Shared setup steps` |
-| Scenarios | `## Detailed test scenarios` — each `### Scenario N` → one `---` block |
-| Scope notes | "does NOT include" bullets from `## Overview`, or explicit AC gaps in `## Edge cases` |
+6. **Print the draft and stop.**
 
-**Per scenario, extract:**
-- HTTP method + endpoint + request body from `#### Steps`
-- Key assertion fields from `#### Expected results` or `#### Validation checklist`
+   ```
+   Draft ready. Post this comment to {TICKET}?
+     y  post now      n  cancel      e  describe edits and regenerate
+   ```
 
-### Step 4: Build curl request blocks
+   `--dry-run` skips the prompt. Never post without an explicit `y`.
 
-Use `curl` with **Postman `{{variable}}` placeholders** — no shell `export` blocks, no `$VAR` syntax, no `| jq`, no pipes. **No `.http` format.**
+7. **Post** from `testing/QA-COMMENT.md` per the **jira-cli** skill's comment recipe, which
+   converts Markdown to ADF and verifies the rendered result. Then print:
 
-**Prerequisites block** (emit once, as a Postman environment table):
+   ```
+   QA comment posted — {TICKET}   https://auctiontechnologygroup.atlassian.net/browse/{TICKET}
+   Environment: {line}   Scenarios: {N}   Saved: testing/QA-COMMENT.md
+   ```
 
-| Variable | Value |
-|----------|-------|
-| `baseURL` | `<branch preview URL>` |
-| `token` | *(filled after Step 1)* |
-| `houseId` | *(filled after Step 2)* |
-| *(others as needed)* | |
-
-Per-step snippets:
-
-```bash
-# GET (no body):
-curl -si "{{baseURL}}/api/v3/houses/{{houseId}}/{endpoint}" \
-  -H "Authorization: Bearer {{token}}"
-
-# POST/PUT with body:
-curl -si -X POST "{{baseURL}}/api/v3/houses/{{houseId}}/{endpoint}" \
-  -H "Authorization: Bearer {{token}}" \
-  -H "Content-Type: application/json" \
-  -d '{ "field": "VALUE" }'
-
-# DELETE:
-curl -si -X DELETE "{{baseURL}}/api/v3/houses/{{houseId}}/{endpoint}" \
-  -H "Authorization: Bearer {{token}}"
-```
-
-**Rules:**
-- Placeholders: `{{baseURL}}`, `{{token}}`, `{{houseId}}`, etc. — camelCase, double-braces, inside quoted strings
-- **Never** use shell `$VAR`, `export VAR=...`, `| jq`, `| head`, or `export VAR=$(...)` capture patterns
-- Setup steps that require picking IDs become prose instructions ("copy the `id` into `newItemId`")
-- Omit `-H "Content-Type: application/json"` and `-d` body for GET/DELETE requests with no body
-- Expected response: always show the **complete response body**
-- One ✅ assertion line per step summarising what the response confirms
-
-### Step 5: Assemble comment
-
-Build the comment from the template below in this order:
-
-1. Header + environment line
-2. "What was added" (1–2 sentences from `## Overview`)
-3. **AI-disclaimer note** (fixed, verbatim — see below), directly under "What was added"
-4. Prerequisites block (variable list + note to authenticate first)
-5. `---` + **Step 1 — Authenticate** (instruction only — no HTTP block)
-6. `---` + Step 2 (baseline GET) + expected JSON + ✅ line
-7. `---` + one block per scenario + expected JSON + ✅ line
-8. Scope notes (only when guide explicitly flags AC gaps or deferrals)
-
-**AI-disclaimer note** — mandatory, non-negotiable, always included regardless of ticket type
-or scenario count (never paraphrase or drop it):
-
-```
-NOTE: This guide was created with AI; use it as a reference; perform your own validation based on the above ACs.
-```
-
-If `TESTING-PROGRESS.md` exists and all scenarios show `PASS`, append:
-> *Locally verified — all {N} scenarios passed.*
-
-(No filename in the appended line — `TESTING-PROGRESS.md` lives under `bin/`, is never committed,
-and QA reading the Jira comment cannot open it. Naming it as if it were referenceable is
-misleading; state the fact it confirms, not the path.)
-
-**Write the assembled comment to disk immediately** — always, including under `--dry-run` —
-next to `TESTING-GUIDE.md`:
-
-```
-bin/stories/{year}/{month}/{TICKET}-*/testing/QA-COMMENT.md
-```
-
-This is the durable copy (multi-line Postman-format text with `{{variables}}` also doesn't
-survive inline shell escaping, so Step 7 reads from this file rather than re-generating one).
-Re-running `/atg:qa-comment {TICKET}` overwrites this file with the latest draft.
-
-### Step 6: Print draft and wait for approval
-
-Print the full comment (from the file just written), then **stop and prompt**:
-
-```
-───────────────────────────────────────────
-Draft ready. Post this comment to {TICKET}?
-  y  — post now
-  n  — cancel
-  e  — describe edits and regenerate
-───────────────────────────────────────────
-```
-
-- **`y`** → proceed to Step 7
-- **`n`** → exit; nothing is posted
-- **`e`** → user describes changes → regenerate → re-show draft → repeat prompt
-- `--dry-run` → print draft only; skip prompt entirely
-
-**Do NOT post until the user explicitly confirms with `y`.**
-
-### Step 7: Post + confirm
-
-Resolve per the **jira-cli** skill. Post using the `QA-COMMENT.md` file already written in Step 5
-(same `testing/` directory as `TESTING-GUIDE.md`) — do not re-write it to a scratch or temp path:
-
-```bash
-acli jira workitem comment create --key {TICKET} --body-file bin/stories/{year}/{month}/{TICKET}-*/testing/QA-COMMENT.md
-```
-
-Fallback if `acli` is unavailable:
-```
-mcp__mcp-atlassian__jira_add_comment(issue_key="{TICKET}", body="{comment}")
-```
-
-Print on success:
-
-```
-✅ QA comment posted — {TICKET}
-   https://auctiontechnologygroup.atlassian.net/browse/{TICKET}
-
-Environment: {environment line}
-Scenarios:   {N} steps
-Saved:       bin/stories/{year}/{month}/{TICKET}-*/testing/QA-COMMENT.md
-
-Next: /atg:retro {TICKET}
-Note: Run retro now — do not wait for PR merge (retro captures story work, not merge state).
-```
-
----
-
-## Comment template (canonical shape)
+## Comment template
 
 ```markdown
 ## QA Testing — {TICKET}: {feature name}
@@ -209,27 +90,26 @@ Note: Run retro now — do not wait for PR merge (retro captures story work, not
 **Environment:** {environment line}
 
 **What was added**
-{1-2 sentence summary — "What changed:" from TESTING-GUIDE.md Overview}
+{1–2 sentences from the guide's Overview}
 
 NOTE: This guide was created with AI; use it as a reference; perform your own validation based on the above ACs.
 
 **Prerequisites**
 - App deployed to your target env
-- House-admin credentials required for write operations
-- Set these variables in your Postman environment before running any request:
+- House-admin credentials for write operations
+- Postman environment variables:
 
 | Variable | Value |
 |----------|-------|
 | `baseURL` | `{branch preview URL}` |
 | `token` | *(filled after Step 1)* |
 | `houseId` | *(filled after Step 2)* |
-| *(others as needed)* | |
 
 ---
 
 **Step 1 — Authenticate**
 
-Log in with house-admin credentials and copy the `token` from the response into your `token` environment variable.
+Log in with house-admin credentials and copy `token` from the response into your `token` variable.
 
 ```bash
 curl -si -X POST "{{baseURL}}/api/v3/auth" \
@@ -239,79 +119,40 @@ curl -si -X POST "{{baseURL}}/api/v3/auth" \
 
 ---
 
-**Step 2 — {Baseline GET description}**
+**Step 2 — {Baseline GET}**
 
 ```bash
-curl -si "{{baseURL}}/api/v3/houses/{{houseId}}/{endpoint}" \
-  -H "Authorization: Bearer {{token}}"
+curl -si "{{baseURL}}/api/v3/houses/{{houseId}}/{endpoint}" -H "Authorization: Bearer {{token}}"
 ```
 
 Expected response:
 ```json
-{
-  "fieldName": expectedValue
-}
+{ "field": expectedValue }
 ```
 
-✅ {one-line confirmation of what this verifies}
+✅ {what this confirms}
 
 ---
 
 **Step {N} — {Scenario name}**
 
 ```bash
-curl -si -X POST "{{baseURL}}/api/v3/houses/{{houseId}}/{endpoint}" \
-  -H "Authorization: Bearer {{token}}" \
-  -H "Content-Type: application/json" \
-  -d '{
-  "field": "VALUE"
-}'
+{request}
 ```
 
 Expected response:
 ```json
-{
-  "field": expectedValue
-}
+{ complete body }
 ```
 
-✅ {one-line assertion}
+✅ {assertion}
 
 ---
 
-**Acceptance criteria scope note** *(only when guide flags AC gaps or deferrals)*
-{Explanation of what was intentionally excluded and why — e.g. per reviewer feedback.}
+**Acceptance criteria scope note** *(only when the guide flags a gap or deferral)*
+{what was excluded and why}
 ```
 
----
+Jira renders `---` as a rule, so keep one per step.
 
-## Design rules
-
-1. **AI-disclaimer note is mandatory, non-negotiable** — always included verbatim under "What was
-   added", regardless of ticket type or scenario count; never paraphrase or drop it
-2. **Draft-first, explicit approval** — always print the full comment and wait for `y`; never post silently
-3. **curl with Postman `{{variable}}` placeholders** — define variables once in a Prerequisites environment table; use `{{var}}` inside quoted strings in every `curl` snippet; never use `$VAR`, `export`, `| jq`, or pipe chains
-4. **Authenticate = instruction only** — Step 1 shows the auth `curl` but tells QA to copy the token into their `token` env var; no shell capture
-5. **Always show the complete response body** — never truncate or show key fields only
-6. **Environment line is automatic** — derived from `gh pr list`; not typed manually
-7. **Scope notes are conditional** — only included when the guide explicitly flags AC gaps
-8. **`TESTING-PROGRESS.md` is optional** — command works even if `/atg:test-run` was skipped
-9. **One `---` divider per step** — Jira renders `---` as `<hr>`; improves readability in the ticket
-10. **Output always lands in `testing/QA-COMMENT.md`** — never a scratchpad or temp path; this holds
-    even for `--dry-run`, so the draft is reviewable/diffable and survives the session
-11. **Never reference a `bin/` path inside the comment content itself** — `bin/` is local scratch,
-    gitignored/untracked, and invisible to QA reading the Jira ticket. Everything QA needs
-    (scenarios, curl blocks, expected responses, the AI disclaimer) is already inlined by this
-    template; the one place this used to leak was the `TESTING-PROGRESS.md` filename in the
-    "Locally verified" line — state the fact, not the filename. Before posting, grep the drafted
-    comment for `bin/` and fix any hit.
-
-## Next steps (after posting)
-
-Run retro immediately after posting the QA comment — do not wait for PR merge or QA
-sign-off. The retro captures the story's implementation work, which is already done.
-Opening a new branch/PR to do it later is not feasible.
-
-```
-/atg:retro {TICKET}
-```
+**Next:** `/atg:retro {TICKET}` immediately after posting. Do not wait for QA sign-off.

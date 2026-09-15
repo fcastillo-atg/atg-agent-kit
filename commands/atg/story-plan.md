@@ -1,833 +1,185 @@
 ---
-description: Create a branch-split implementation plan for a WBPR story — LOC estimate, feature flag strategy, branch breakdown, As-built placeholder
+description: Create a branch-split implementation plan for a WBPR story: LOC estimate, feature flag strategy, branch breakdown, As-built placeholder
 ---
 
-# Story Implementation Plan with Branch Strategy
+# Story plan
 
-You are a senior Spring Boot architect specializing in Trunk-Based Development with feature flags. Create comprehensive implementation plans that break down stories into manageable, independently testable branches.
+Turn a story into `implementation-plan.md`: analysis, architecture, LOC estimate, feature flag
+decision, and a branch split that keeps every PR near 500 LOC. Also writes the condensed
+repo-committed plan under `.claude/plans/`.
 
-## Context
+## Usage
 
-The user has provided a story (JIRA ticket, feature description, or technical requirement) that needs implementation planning. Your task is to:
-
-1. **Resolve** canonical story text: use existing `{TICKET}-story.md` when present, otherwise fetch Jira (per the **jira-cli** skill) and create or update that file; whenever Jira is fetched, also **retrieve and review ticket comments** (see Step 1).
-2. **Analyze** the story requirements and current codebase
-3. **Design** architecture flow and implementation details
-4. **Capture explicit dependencies, decision points, and risk/performance notes**
-5. **Estimate** total lines of code (production + test)
-6. **Design** feature flag strategy (if needed)
-7. **Split** work into branches following the LOC-based rule
-8. **Document** detailed implementation plan with branch specifications
-
-## Requirements
-
-**Story Input**: $ARGUMENTS
-
-**Refresh from Jira**: If the user asks to refresh, re-sync from Jira, or similar, treat `{TICKET}-story.md` as stale—fetch issue **and comments** (per the **jira-cli** skill) and overwrite or update the file before continuing.
-
-## Branch Splitting Rule
-
-**Apply this rule strictly:**
-
-- **If total LOC ≤ 500**: Use **1 branch** only (full feature: production, tests, docs in one PR unless the team explicitly requests otherwise). **Baseline:** **~400–500 LOC** total is the natural sizing for a single-branch story; anything **at or below 500** stays one branch (including smaller changes).
-- **If total LOC > 500 and < 1000**: Split into **2 branches**; size each slice toward **≤500 LOC** (same ceiling as single-branch stories—split the work in half, do not use 350 as a planning unit).
-- **If total LOC >= 1000**: Start from **ceil(total_LOC / 500)** chunks, then **merge tiny tails**: let **r = total_LOC mod 500** (remainder after full 500-LOC blocks). If **0 < r < 100**, do **not** open a separate branch for that tail—use **N = floor(total_LOC / 500)** branches instead and **absorb** the extra lines into the last slice (or split evenly). A **~50 LOC** sliver is not its own branch.
-  - If **r ≥ 100** (or **r = 0**), **N = ceil(total_LOC / 500)** as usual.
-  - Each branch should target **~400–500 LOC** where practical; **≤500** is the norm, but **one** branch may land **slightly above 500** when absorbing a **<100 LOC** remainder (prefer that over a useless micro-branch).
-
-**LOC Calculation Includes:**
-- Production code (Kotlin/Java)
-- Test code (Groovy/Kotlin)
-- Documentation updates (markdown)
-- Configuration files (if substantial)
-
-**Example Calculations:**
-- 450 LOC total → **1 branch** (~400–500 baseline band)
-- 400 LOC total → **1 branch** (≤500 LOC)
-- 700 LOC total → **2 branches** (501–999 tier; each slice ~half of total, each **≤500 LOC**)
-- 1,050 LOC total → **2 branches** (≥1000; remainder 50 after 2×500 → **<100**, merge—do not split off ~50 LOC)
-- 1,750 LOC total → **4 branches** (≥1000; remainder 250 ≥ 100 → ceil(1750 / 500) = 4)
-
-## Instructions
-
-### Step 1: Resolve story input (canonical source)
-
-**Goal:** One authoritative story text for all later steps—either an existing snapshot file or Jira (resolved per the **jira-cli** skill)—and **awareness of ticket discussion** (comments) that can change scope or acceptance.
-
-**Policy:**
-
-- **Jira is source of truth** when you fetch or refresh; `{TICKET}-story.md` is a **repo snapshot** for planning and review (avoid two divergent specs).
-- **If** `bin/stories/{year}/{month}/{TICKET}-{slug}/{TICKET}-story.md` **exists** and the user did **not** request a refresh from Jira, **read and use that file** as the planning input (fast; works when Jira is unreachable). **Note in the preamble** that Jira comments were **not** re-fetched; if the ticket may have new discussion, recommend a refresh.
-- **If** the file **does not exist**, or the user requests **refresh**, or `$ARGUMENTS` is only a ticket key/URL with no pasted description, **fetch the issue** per the **jira-cli** skill (`acli jira workitem view {TICKET} --fields summary,description,comment --json`, falling back to `mcp__mcp-atlassian__jira_get_issue`), then **create or update** `bin/stories/{year}/{month}/{TICKET}-{slug}/{TICKET}-story.md` with title, description, acceptance criteria, and a link to `https://auctiontechnologygroup.atlassian.net/browse/{TICKET}`.
-- **Jira comments (required whenever Jira is fetched):**
-  - **Retrieve** comments for the issue as part of the same fetch (the `comment` field on `acli jira workitem view`, or the equivalent MCP `fields`/`expand` param).
-  - **Review** comments for scope changes, clarifications, AC tweaks, blockers, or decisions **not** in the description.
-  - **Summarize** material comment takeaways in the plan preamble (and in **Analyze**, treat them like part of the story).
-  - When writing or updating `{TICKET}-story.md`, add or update a **## Jira comments (summary)** section (or equivalent): short bullet summary of relevant threads; omit noise. If there are no substantive comments, state that explicitly.
-- **If** both `acli` and MCP fail, say so, and fall back to pasted description or ask the user to paste Jira fields **and** important comments.
-
-**Output (include in the plan preamble):**
-
-- Ticket key and browse URL
-- Path to `{TICKET}-story.md` used or created
-- Whether content came from **file** or **Jira** (and via `acli` or MCP)
-- **Jira comments:** retrieved or not (and why); **summary** of anything that affects planning (or “none substantive”)
-
-### Step 2: Analyze Story Requirements
-
-**Extract from story:**
-```
-- Feature description and acceptance criteria
-- Jira comment takeaways from Step 1 (scope, decisions, AC changes)
-- User flows and use cases
-- Performance requirements
-- Dependencies on existing code
-- Testing requirements
-- Documentation needs
-```
-
-**Investigate codebase:**
-- Search for related existing functionality
-- Identify services/repositories/controllers to modify
-- Check for similar patterns in the codebase
-- Review recent related changes (git history)
-
-**Output:**
-```markdown
-## Story Analysis
-
-### Requirements Summary
-- [List key requirements]
-
-### Current State
-- [What exists today]
-- [Related code: file paths with line numbers]
-
-### Gap Analysis
-- [What's missing]
-- [What needs modification]
-```
-
-### Step 2b: Architecture Design (Required)
-
-After analysis, add an explicit architecture section to make implementation intent obvious before branch slicing.
-
-**Output (required in plan):**
-
-```markdown
-## Architecture design
-
-### Component diagram
-- Use **Mermaid** or ASCII diagram.
-- Show event flow and service/repository/external-system interactions.
-- Include queue/topic names when messaging is involved.
-- Include transaction boundaries or listener boundaries when relevant.
-
-### Key implementation details
-- List the critical production changes with concrete signatures/snippets.
-- Include 4-8 focused snippets (not full files), e.g.:
-  - repository query method signature
-  - service orchestration method
-  - listener handler flow
-  - feature-flag interface wiring (if used)
-  - validation rule method
-  - migration/index DDL (if any)
-- For each snippet, state **why** it exists and **what risk/edge-case** it addresses.
-```
-
-**Depth rule:**
-- For stories touching 2+ components (service + repo + events/external), this section is mandatory and detailed.
-- For tiny single-file changes, include a compact version (at least one mini diagram + 2 key snippets).
-
-### Step 2c: Dependencies, Open Questions, and Performance Notes
-
-Add these sections to avoid hidden assumptions:
-
-```markdown
-## Dependencies
-
-### External dependencies
-- [SLB/RabbitMQ/DB/index/cache/etc. dependencies]
-
-### Internal dependencies
-- [Required existing modules/services/stories]
-
-## Open questions
-- [Decision that impacts implementation shape]
-- [Decision that impacts acceptance criteria/test strategy]
-- If none: `- None at planning time.`
-
-## Performance considerations
-- Include this section when the story touches queries, batch processing, messaging, or loops over large datasets.
-- Capture baseline/expected impact and any required index/query/batch strategy.
-- If not applicable, add one line: `Not performance-sensitive for current scope.`
-```
-
-**Conditional rule for `## Open questions`:**
-- If `## Pre-Analysis` exists and already contains unresolved open questions, do **not** duplicate; add a short
-  carry-forward line in `## Open questions` pointing to `## Pre-Analysis`.
-- If `## Pre-Analysis` exists and has no open questions, `## Open questions` is optional (you may omit it).
-- If `## Pre-Analysis` is absent, include `## Open questions` explicitly (or `None at planning time`).
-
-### Step 3: Estimate Lines of Code
-
-**Estimate for each component:**
-
-```
-Production Code Estimate:
-- New files: [estimate per file]
-- Modified files: [estimate per file]
-- Subtotal: XXX LOC
-
-Test Code Estimate:
-- Unit tests: [estimate]
-- Integration tests: [estimate]
-- Subtotal: XXX LOC
-
-Documentation:
-- README updates: [estimate]
-- API docs: [estimate]
-- Subtotal: XXX LOC
-
-TOTAL: XXX LOC
-```
-
-**Be realistic with estimates:**
-- Simple CRUD: ~50-100 LOC per operation
-- Service methods: ~30-60 LOC each
-- Repository queries: ~10-20 LOC each
-- Unit tests: ~80-120 LOC per service method
-- Integration tests: ~100-150 LOC per endpoint
-- Event listeners: ~40-80 LOC
-- Feature flags (single file): ~80-120 LOC
-
-### Step 4: Design Feature Flag (If Needed)
-
-**Determine if feature flag is needed:**
-- ✅ New user-facing functionality
-- ✅ Complex changes requiring gradual rollout
-- ✅ Changes with rollback risk
-- ❌ Bug fixes
-- ❌ Refactoring (no behavior change)
-- ❌ Documentation-only changes
-
-**🛡️ CRITICAL: If feature flag is needed, it MUST be implemented in Branch 1 (FIRST)!**
-
-**If feature flag needed, apply /atg:feature-flag logic:**
-
-```markdown
-## Feature Flag Design
-
-**Priority**: MUST be implemented in Branch 1 (FIRST)
-
-**Feature Name**: `{snake_case_name}`
-**Cookie Control**: `FF_{snake_case_name}=true`
-
-**Interface**: `{DomainConcept}`
-**Noop Implementation**: `Noop{DomainConcept}` (legacy behavior - does nothing)
-**Enabled Implementation**: `{Descriptive}{DomainConcept}` (new behavior)
-
-**Branch 1 Implementation**:
-- Enabled implementation throws `UnsupportedOperationException` (safe failure)
-- Flag DISABLED by default
-- Wire into services (calls noop by default)
-- NO production behavior change
-
-**Subsequent Branches**:
-- Replace `UnsupportedOperationException` with actual logic
-- Flag remains DISABLED by default
-- All functionality behind disabled flag (safe)
-
-**Single File**: `src/main/kotlin/com/{package}/{DomainConcept}FeatureFlag.kt`
-
-**LOC Estimate**: ~100 LOC (interface + 2 impls + factory + docs)
-```
-
-### Step 5: Apply Branch Splitting Strategy
-
-**Calculate branches needed:**
-```
-Total LOC: [from Step 3]
-Branch count: [apply rule from Branch Splitting Rule section]
-LOC per branch: [total / branch count]
-```
-
-**For total LOC ≥ 1000:** compute **r = total_LOC mod 500**. If **0 < r < 100**, use **floor(total_LOC / 500)** branches and merge the tail; otherwise **ceil(total_LOC / 500)**. (Align with **500 LOC** base—do **not** use 350 as the divisor.)
-
-**If total LOC ≤ 500:** branch count is **1** (the **~400–500 LOC** band is the baseline for single-branch work). Put production code, tests, documentation, and any feature-flag scaffolding in that **single** branch/PR (do not apply multi-branch patterns A/B/C below).
-
-**Create branch breakdown:**
-
-For each branch:
-1. **Branch name**: `fc/{TICKET}-{descriptive-name}`
-2. **LOC estimate**: ~XXX lines
-3. **Files changed**: List with LOC per file
-4. **Focus**: What this branch accomplishes
-5. **Dependencies**: Which branch must merge first
-6. **Testing strategy**: How to verify this branch works
-7. **PR template**: Description for pull request
-
-**Branch Progression Pattern:**
-
-**🛡️ CRITICAL: SAFETY-FIRST PRINCIPLE**
-
-**If feature flag is needed, it MUST be Branch 1 (FIRST)!**
-
-**Pattern A (SAFETY FIRST - Feature Flag Required):**
-```
-Branch 1: Feature Flag Infrastructure (ALWAYS FIRST) (aim ≤500 LOC)
-  - Feature flag file (interface + noop + enabled with UnsupportedOperationException)
-  - Wire into services (stub calls)
-  - Tests for flag behavior
-  - Flag DISABLED by default
-  - ✅ ZERO production risk
-
-Branch 2: Core Logic (aim ≤500 LOC)
-  - Repository queries
-  - Service methods (replace UnsupportedOperationException)
-  - Unit tests
-  - ✅ Behind disabled flag (safe)
-
-Branch 3: Complete Feature (aim ≤500 LOC)
-  - Controllers/endpoints
-  - Event systems
-  - Integration tests
-  - Complete enabled implementation
-  - ✅ Behind disabled flag (safe)
-```
-
-**Pattern B (No Feature Flag - Simple Changes):**
-```
-Branch 1: Infrastructure (aim ≤500 LOC)
-  - Repository queries
-  - Service methods (core logic)
-  - Unit tests
-
-Branch 2: Feature Implementation (aim ≤500 LOC)
-  - Controllers/endpoints
-  - Integration tests
-```
-
-**Pattern C (Vertical Slices - No Feature Flag):**
-```
-Branch 1: CRUD Operations (aim ≤500 LOC)
-  - Create + Read endpoints
-  - Basic service logic
-  - Tests
-
-Branch 2: Advanced Features (aim ≤500 LOC)
-  - Update + Delete endpoints
-  - Business logic
-  - Tests
-```
-
-**Choose pattern based on:**
-- **Pattern A (SAFETY FIRST)**: When feature flag is needed (user-facing changes, complex changes, rollback risk)
-- **Pattern B (Infrastructure)**: New systems/complex changes WITHOUT feature flag
-- **Pattern C (Vertical Slices)**: Extending existing systems WITHOUT feature flag
-
-**⚠️ IMPORTANT**: If feature flag is needed, Pattern A is MANDATORY. Never put feature flag last!
-
-### Step 6: Document Branch Strategy
-
-Write all per-branch content into **`implementation-plan.md`** under **`## Branch strategy`**, using **`### Branch N: \`fc/{TICKET}-{name}\`** headings (see **Canonical structure** above). Do not create a separate `branch-strategy.md` file.
-
-**For each branch, provide:**
-
-```markdown
-### Branch {N}: `fc/{TICKET}-{name}` (~XXX LOC)
-
-**Goal**: [One-sentence description]
-
-**Depends On**: [Previous branch or "None"]
-
-**Files Changed** ({X} files):
-```
-path/to/file1.kt          +XX LOC
-path/to/file2.kt          +XX LOC
-path/to/test/Spec.groovy  +XX LOC
-Total: ~XXX lines
-```
-
-**Changes**:
-
-1. **File1.kt** (+XX lines)
-   ```kotlin
-   // Show key code snippets or signatures
-   ```
-
-2. **File2.kt** (+XX lines)
-   ```kotlin
-   // Show key code snippets or signatures
-   ```
-
-**Testing Strategy**:
 ```bash
-# Commands to test this branch
-./gradlew test --tests "SpecificSpec"
-
-# Manual testing steps
-1. [Step-by-step verification]
+/atg:story-plan WBPR-3215
+/atg:story-plan "Implement lot end time propagation optimization"   # description, no ticket
+/atg:story-plan WBPR-3215 --refresh                                 # re-fetch Jira, overwrite the story snapshot
 ```
 
-**Acceptance Criteria**:
-- ✅ [Specific success criterion]
-- ✅ [Another criterion]
+Story input: $ARGUMENTS
 
-**PR Description Template**:
-```markdown
-## {TICKET}: [Branch description]
+## Steps
 
-### Summary
-[What this branch accomplishes]
+### 1. Resolve the story
 
-### Changes
-- [Bullet list of changes]
+Resolve the ticket and story directory per the **atg-story-artifacts** skill.
 
-### Testing
-- [x] Unit tests pass
-- [x] Integration tests pass
-- [x] Manual verification completed
+- If `{TICKET}-story.md` exists and no refresh was asked for, use it. Note in the preamble that
+  Jira comments were not re-fetched.
+- Otherwise fetch summary, description, and comments per the **jira-cli** skill, then create or
+  update `{TICKET}-story.md` with title, description, acceptance criteria, a
+  `## Jira comments (summary)` section (or "none substantive"), and the browse URL.
+- Review comments for scope changes, AC tweaks, blockers, and decisions not in the description.
+  Treat material takeaways as part of the story.
+- If Jira is unreachable and no file exists, ask the user to paste the fields and comments.
 
-### Performance Impact (if applicable)
-[Benchmarks or measurements]
+Preamble must record: ticket key and URL, story file path, source (file or Jira, and which
+tier), and whether comments were reviewed.
 
-### Dependencies
-[If depends on other branch]
-```
-```
+If `## Pre-Analysis` already exists (from `/atg:brief`), skip Step 2's own analysis and use it
+as input.
 
-### Step 7: Create Testing Strategy Per Branch
+### 2. Analyze
 
-**For each branch, specify:**
+Extract requirements, ACs, comment takeaways, user flows, performance needs, dependencies, and
+testing needs. Investigate the codebase: related functionality, services and repositories to
+touch, comparable patterns, recent git history. Be skeptical: confirm the feature does not
+already exist before planning new code.
 
-```markdown
-## Testing Strategy
+Write `## Story analysis` (requirements summary, current state with `file:line`, gap analysis).
 
-### Branch 1 Testing
-**Unit Tests**:
-- Test {component} with {scenarios}
-- Expected coverage: 95%+
+### 3. Architecture design (required)
 
-**Integration Tests**:
-- None (infrastructure only)
+Write `## Architecture design` with:
 
-**Manual Testing**:
-```bash
-# Can call method directly
-service.methodName(params)
-# Verify [expected behavior]
-```
+- `### Component diagram`: Mermaid or ASCII. Event flow, service/repository/external
+  interactions, queue names, transaction and listener boundaries where relevant.
+- `### Key implementation details`: 4 to 8 focused snippets (repository query signature,
+  service orchestration, listener flow, flag wiring, validation rule, DDL). For each, say why it
+  exists and which risk or edge case it addresses.
 
-### Branch 2 Testing
-**Unit Tests**:
-- [Specific test cases]
+Stories touching 2+ components get the full version. Single-file changes get one mini diagram
+and two snippets.
 
-**Integration Tests**:
-- Test {endpoint} with {scenarios}
-- Verify {behavior}
+### 4. Dependencies, open questions, performance
 
-**Manual Testing**:
-```bash
-curl -X POST http://localhost:8080/api/...
-# Verify [expected result]
-```
+- `## Dependencies`: external (SLB, RabbitMQ, DB, index, cache) and internal (modules, stories).
+- `## Open questions`: required when no `## Pre-Analysis` exists or new questions arose. If
+  Pre-Analysis already lists unresolved questions, add one carry-forward line instead of
+  duplicating. Otherwise `- None at planning time.`
+- `## Performance considerations`: required when the story touches queries, batches, messaging,
+  or large loops (baseline, expected impact, index/batch strategy). Otherwise one line:
+  `Not performance-sensitive for current scope.`
 
-### Branch 3 Testing
-**Unit Tests**:
-- Feature flag toggle tests
+### 5. Estimate LOC
 
-**Integration Tests**:
-- End-to-end workflow tests
+Sum production, test, docs, and substantial config. Write `## Lines of code estimate` with a
+per-file breakdown and subtotals.
 
-**Manual Testing**:
-```bash
-# With feature flag enabled
-curl -H "Cookie: FF_{name}=true" ...
+| Component | LOC |
+|---|---|
+| Simple CRUD operation | 50–100 |
+| Service method | 30–60 |
+| Repository query | 10–20 |
+| Unit tests per service method | 80–120 |
+| Integration tests per endpoint | 100–150 |
+| Event listener | 40–80 |
+| Feature flag (single file) | 80–120 |
 
-# With feature flag disabled
-curl -H "Cookie: FF_{name}=false" ...
-```
-```
+Do not underestimate tests.
 
-### Step 8: Add Merge Strategy
+### 6. Feature flag decision
 
-**Document merge order:**
+Needed for new user-facing behaviour, gradual rollout, or rollback risk. Not for bug fixes,
+refactors, or docs. When needed, write `## Feature flag` and put the flag in Branch 1:
 
 ```markdown
-## Merge Strategy
-
-### Sequential Merge Order
-```
-main
- ↓
-{TICKET}-1 ({name}) ✅ Merge to main
- ↓
-{TICKET}-2 ({name}) ✅ Merge to main
- ↓
-{TICKET}-3 ({name}) ✅ Merge to main
+## Feature flag
+**Feature name**: `{snake_case}`   **Cookie**: `FF_{snake_case}=true`
+**Interface** `{DomainConcept}` / **Noop** `Noop{DomainConcept}` / **Enabled** `{Descriptive}{DomainConcept}`
+**File**: `src/main/kotlin/com/{package}/{DomainConcept}FeatureFlag.kt` (~100 LOC)
+Branch 1: enabled impl throws UnsupportedOperationException, flag off, wired into services, zero behaviour change.
+Later branches: replace the throw with real logic, flag stays off.
 ```
 
-### Testing at Each Stage
+Omit the section entirely when no flag is needed. Pattern details live in `/atg:feature-flag`.
 
-**After Branch 1 Merge**:
-- [What works at this point]
-- [What doesn't work yet]
+### 7. Split into branches
 
-**After Branch 2 Merge**:
-- [What additional functionality is available]
+Apply the rule strictly. `T` is total LOC.
 
-**After Branch 3 Merge**:
-- [Complete feature available]
-- [Feature flag controls rollout]
+- `T ≤ 500`: 1 branch. ~400–500 is the natural single-branch size; smaller stays one branch too.
+- `500 < T < 1000`: 2 branches, each ≤500, split roughly in half.
+- `T ≥ 1000`: `r = T mod 500`. If `0 < r < 100`, use `floor(T/500)` branches and absorb the tail
+  into the last slice (it may land slightly over 500). Otherwise `ceil(T/500)`.
 
-### Rollback Strategy
+Examples: 450 → 1. 400 → 1. 700 → 2. 1050 → 2 (tail 50 absorbed). 1750 → 4.
 
-**If issues in production:**
-- Branch 3: Toggle feature flag to disabled
-- Branch 2: Revert merge commit
-- Branch 1: Requires new code (infrastructure changes)
-```
+Choose a progression pattern:
 
-### Step 9: Create Summary Table
+- **A, flag required**: Branch 1 flag infrastructure and wiring (zero production risk), Branch 2
+  core logic behind the disabled flag, Branch 3 endpoints, events, integration tests. Mandatory
+  whenever a flag is needed; never put the flag last.
+- **B, no flag, new system**: Branch 1 repositories and service core with unit tests, Branch 2
+  controllers and integration tests.
+- **C, no flag, extending existing system**: vertical slices (create+read, then update+delete).
 
-**Provide overview:**
+Each branch needs: name `fc/{TICKET}-{name}`, LOC, files with per-file LOC, goal, depends-on,
+testing strategy, acceptance criteria, PR description template, and a suggested commit order.
 
-```markdown
-## Summary
+### 8. Write `implementation-plan.md`
 
-| Branch | LOC | Files | Tests | Focus | Duration |
-|--------|-----|-------|-------|-------|----------|
-| {TICKET}-1 | ~XXX | X | XXX | {Focus} | {Time} |
-| {TICKET}-2 | ~XXX | X | XXX | {Focus} | {Time} |
-| {TICKET}-3 | ~XXX | X | XXX | {Focus} | {Time} |
-| **Total** | **~XXX** | **X** | **XXX** | **Complete** | **{Total}** |
+Use the canonical section order from **atg-story-artifacts**. Branch content goes under
+`## Branch strategy` as `### Branch N: \`fc/{TICKET}-{name}\` (~XXX LOC)`. Also write
+`## Testing strategy` (per branch), `## Merge strategy` (sequential order, what works after
+each merge, rollback per branch), `## Summary` (table: branch, LOC, files, tests, focus,
+duration; timeline; risk; performance impact), an `## As-built` placeholder, and the
+`## Next ATG command` footer pointing at `/atg:story-impl {TICKET}` (replace any brief footer).
 
-**Timeline**: {X} weeks ({duration} per branch)
+Never `git add` anything under `bin/`.
 
-**Risk Level**: {Low/Medium/High} ({rationale})
+### 9. Write the repo plan file
 
-**Performance Impact**: {Expected improvement or impact}
-```
-
-## Output Format
-
-Your output must include:
-
-1. **Story source resolution** (from Step 1): ticket key, browse URL, path to `{TICKET}-story.md`, file vs Jira (acli/MCP); Jira comments retrieved/summarized (or noted as skipped when using local-only file)
-2. **Story Analysis** (from Step 2)
-3. **Architecture Design** (from Step 2b: component diagram + key implementation details)
-4. **Dependencies / Open Questions / Performance Notes** (from Step 2c; open questions may be conditional)
-5. **LOC Estimate** (from Step 3)
-6. **Feature Flag Design** (from Step 4, if applicable)
-7. **Branch Breakdown** (from Step 5-6)
-8. **Testing Strategy** (from Step 7)
-9. **Merge Strategy** (from Step 8)
-10. **Summary Table** (from Step 9)
-
-**Write to files:**
-
-Two locations, with **different audiences and different git treatment**. Both are required.
-
-| File | Audience | Git |
-|---|---|---|
-| `bin/stories/{year}/{month}/{TICKET}-{slug}/{TICKET}-story.md` | You, this session | **Never commit** |
-| `bin/stories/{year}/{month}/{TICKET}-{slug}/implementation-plan.md` | You, this session | **Never commit** |
-| `wavebid-a2o-service/.claude/plans/{TICKET}-{slug}.md` | The team + future Claude sessions | **Committed to the repo** |
-
-- `bin/stories/.../{TICKET}-story.md` — When missing or when refreshing from Jira (Step 1); snapshot of Jira description and acceptance criteria; include **## Jira comments (summary)** when comments were fetched
-- `bin/stories/.../implementation-plan.md` — **Single canonical plan file** (see **Canonical structure** below). Do **not** create `branch-strategy.md` for new work.
-- `wavebid-a2o-service/.claude/plans/{TICKET}-{slug}.md` — **Required. The small, repo-committed plan** (see **Repo plan file** below).
-
-**⚠️ `bin/` is local scratch, never repo content.** Do **not** `git add` or `git commit` anything under `bin/` — not the story snapshot, not `implementation-plan.md`. It is gitignored under `wavebid-a2o-service/` but **not** at the monorepo root, so the rule is behavioural, not enforced by `.gitignore`. The repo-visible artifact is the `.claude/plans/` file below, and only that.
-
-### Repo plan file: `wavebid-a2o-service/.claude/plans/{TICKET}-{slug}.md`
-
-**Always write this**, in addition to `implementation-plan.md`: create if missing, overwrite if
-stale. Path resolves relative to `wavebid-a2o-service/`, **not** the monorepo root —
-`.cursor/plans/` at the root is a Cursor convention; `.claude/plans/` under the service is what
-Claude Code loads as context in future sessions. Read the two or three most recent files already
-in that directory and match their shape before writing.
-
-This is a **condensed** plan (target **~100 lines / under 5K**), not a copy of
-`implementation-plan.md`. It links back to the full plan rather than repeating it:
+Always write `wavebid-a2o-service/.claude/plans/{TICKET}-{slug}.md` (path relative to the
+service, see rule doc `405-plans-location.md`). Read the two or three newest files there and
+match their shape. Condensed, ~100 lines, under 5K:
 
 ```markdown
 # {TICKET}: {short title}
-
 Full plan: `bin/stories/{year}/{month}/{TICKET}-{slug}/implementation-plan.md`
-
 Story snapshot: `bin/stories/{year}/{month}/{TICKET}-{slug}/{TICKET}-story.md`
 
 ## Summary
-{3–6 bullets: what changes and why. Name what is explicitly out of scope and which ticket owns it.}
-{One line on feature flag / migration / event: needed or not.}
+{3–6 bullets: what changes and why; explicit out-of-scope items and which ticket owns them; flag / migration / event: needed or not}
 
 ## Branch
-`fc/{TICKET}-{slug}` (~XXX LOC, **N branch(es)**)
+`fc/{TICKET}-{slug}` (~XXX LOC, N branch(es))
 
 ## Decisions (brief + story-plan)
-{Numbered. Every choice a reviewer might question, with the reason. Where the ticket was ambiguous
-or self-contradictory, say which reading you took and why. Note which decisions are cheap to
-reverse.}
+{Numbered. Every choice a reviewer might question, with the reason. Which reading of an ambiguous ticket you took. Which decisions are cheap to reverse.}
 
 ## Risks (carry into PR description)
-{Omit if genuinely none. Anything non-additive, any inferred contract decision, any invariant that
-does not hold the way a reader would assume.}
+{Omit if none. Non-additive changes, inferred contracts, invariants that do not hold as a reader would assume.}
 
 ## Files (planned)
-{Bullet list of paths. Close with an explicit "do not touch X — {ticket} owns it" when a sibling
-ticket owns adjacent code.}
+{Paths. Close with "do not touch X, {ticket} owns it" where a sibling owns adjacent code.}
 
 ## Status
-{Planned / Implemented on {branch} / Merged. Then: Next: `/atg:...` → `/atg:...`}
+{Planned / Implemented on {branch} / Merged. Next: `/atg:...`}
 ```
 
-**Commit:** this file belongs in the repo, but commit it on the **implementation branch** (the
-`fc/{TICKET}-{slug}` branch from `## Branch strategy`), not on whatever branch story-plan happened
-to run from. `/atg:story-impl` creates or switches to that branch, so the normal flow is to leave
-the file uncommitted here and let it land as part of the implementation branch's first commit.
-Do not commit it to `main`, and do not push it on its own.
+Leave it uncommitted. It lands in the implementation branch's first commit via
+`/atg:story-impl`, never on `main` alone.
 
-**Canonical structure** (write `implementation-plan.md` using these headings so `/atg:story-impl` can find branch slices):
+### 10. Report
 
-1. `# {TICKET}: {short title} — Implementation plan`
-2. `## Pre-Analysis` — only when present (from `/atg:brief`); otherwise omit
-3. `## Preamble` — ticket URL, story source (file vs Jira, acli/MCP), Jira comment summary
-4. `## Story analysis` — requirements, current state, gaps
-5. `## Architecture design` — required; include `### Component diagram` and `### Key implementation details`
-6. `## Dependencies` — include external and internal dependencies
-7. `## Open questions` — conditional: include when no `## Pre-Analysis` exists, or when new unresolved questions arise during story-plan; if brief already has unresolved questions, reference carry-forward instead of duplicating
-8. `## Performance considerations` — required when performance-sensitive; otherwise one-line not-applicable note
-9. `## As-built` — **add this section after all branches are merged and shipped**; describes the final state of every changed layer (DB, entity, API response, repository, handler, etc.) so that `/atg:testing-doc` and future readers have an accurate post-implementation picture. Leave a placeholder comment `<!-- TODO: fill in after implementation -->` while work is in-progress so the section is easy to find and complete.
-10. `## Lines of code estimate`
-11. `## Feature flag` — omit section entirely if not applicable
-12. `## Branch strategy` — **required when multi-branch**; for each slice use: `### Branch N: \`fc/{TICKET}-{slug}\` (~XXX LOC)` with goal, depends-on, files table, changes, testing strategy, acceptance criteria, PR description template (Steps 5–6 content lives here, not in a second file)
-13. `## Testing strategy` — cross-branch or per-branch as needed
-14. `## Merge strategy` — order, rollback
-15. `## Summary` — table (timeline, risk, performance)
-16. `## Next ATG command` — **required, always last section** of the file (after `## Summary`). If `/atg:brief` already appended this section, **replace** it with the story-plan handoff below so the doc does not show two different “next” steps.
+Reply with the preamble facts, the summary table, and the same `## Next ATG command` block that
+ends the plan file.
 
-**`## Next ATG command` template (story-plan):** use the real ticket key:
+## When the story is unclear
 
-```markdown
----
+Ask before finalising, using AskUserQuestion. Do not assume on unverified points. If the story
+assumes code that does not exist, write a `## Critical findings` block (missing, impact,
+recommendation) and adjust scope or propose prerequisite stories.
 
-## Next ATG command
-
-`/atg:story-impl {TICKET}` — build the work queue from this plan and implement the current branch.
-
-Then `/atg:verify` before ship; add a changeset (or plan **`skip-changelog`** on the PR) when `wavebid-a2o-service/` or `wavebid-a2o-ui/` paths change.
-```
-
-**Chat parity:** repeat the same **Next ATG command** block at the end of the assistant message.
-
-**Legacy:** Older story folders may still contain `branch-strategy.md` beside `implementation-plan.md`. Prefer one merged `implementation-plan.md`; delete `branch-strategy.md` when cleaning up. New `/atg:story-plan` runs must not add `branch-strategy.md`.
-
-**File Naming:**
-- Use ticket number if provided (e.g., `WBPR-3215`)
-- Use descriptive name if no ticket (e.g., `user-auth-feature`)
-
-## Validation Checklist
-
-Before delivering the plan:
-
-- [ ] Story input resolved: existing `{TICKET}-story.md` used, or Jira fetched (acli/MCP) and file created/updated (unless both unavailable and user provided pasted text)
-- [ ] When Jira was fetched: issue **comments** retrieved and reviewed; material takeaways in preamble and in `{TICKET}-story.md` comment summary (or explicit “none substantive”)
-- [ ] Total LOC estimated realistically
-- [ ] `## Architecture design` present with both `### Component diagram` and `### Key implementation details`
-- [ ] Key implementation details include concrete method/query signatures or focused code snippets (not only prose)
-- [ ] `## Dependencies` section present (external + internal)
-- [ ] `## Open questions` handled correctly: present when needed, or intentionally omitted when `## Pre-Analysis` already resolves all questions
-- [ ] `## Performance considerations` section present (or explicit not-applicable note)
-- [ ] Branch count follows splitting rule (1 if ≤500 LOC, ~400–500 as single-branch baseline; 2 if 501–999 LOC; if ≥1000: merge remainder **<100** into fewer branches; else ceil(total/500); per-branch target ≤500 LOC, not 350)
-- [ ] Each branch has clear focus and deliverable
-- [ ] Dependencies between branches documented
-- [ ] Testing strategy defined per branch
-- [ ] Feature flag included if needed
-- [ ] Cookie-based control documented with `FF_` prefix
-- [ ] PR templates provided for each branch
-- [ ] Merge order clearly specified
-- [ ] Rollback strategy defined
-- [ ] Summary table complete
-- [ ] Single `implementation-plan.md` produced with `## Branch strategy` (and `### Branch N:`) when multi-branch; no new `branch-strategy.md`
-- [ ] `## As-built` section present in `implementation-plan.md` (filled after implementation, or placeholder comment if still in-progress)
-- [ ] `## Next ATG command` is the **final** section of `implementation-plan.md` (replaces any brief-only footer) and matches the chat handoff
-- [ ] **`wavebid-a2o-service/.claude/plans/{TICKET}-{slug}.md` written** — condensed (~100 lines), links back to the full plan, matches the shape of the most recent existing files in that directory
-- [ ] **Nothing under `bin/` was `git add`ed or committed** — the `.claude/plans/` file is the only repo-visible artifact, and it is left for the implementation branch to commit
-
-## Example Scenarios
-
-### Scenario 1: Small Feature (≤500 LOC, ~400–500 baseline)
-
-**Story**: "Add a single validation rule to lot update API"
-
-**Total Estimate**: 400 LOC
-- Production: 120 LOC
-- Tests: 260 LOC
-- Docs: 20 LOC
-
-**Branch Strategy**: **1 branch** (≤500 LOC; fits single-branch **~400–500** sizing)
-- Single branch: validator + service wiring + unit/integration tests + docs
-
-**Feature Flag**: Usually not needed unless product asks for gradual rollout
-
----
-
-### Scenario 2: Simple Feature (501–999 LOC)
-
-**Story**: "Add pagination to auction list endpoint"
-
-**Total Estimate**: 600 LOC
-- Production: 150 LOC
-- Tests: 400 LOC
-- Docs: 50 LOC
-
-**Branch Strategy**: 2 branches (501 ≤ 600 < 1000)
-- Branch 1: Repository pagination (~300 LOC; under **500** ceiling)
-- Branch 2: Controller + integration tests (~300 LOC; under **500** ceiling)
-
-**Feature Flag**: Not needed (straightforward enhancement)
-
----
-
-### Scenario 3: Complex Feature (>1000 LOC)
-
-**Story**: "Implement lot end time propagation optimization (Case D)"
-
-**Total Estimate**: 1,060 LOC
-- Production: 400 LOC
-- Tests: 590 LOC
-- Docs: 70 LOC
-
-**Branch Strategy**: 2 branches (1060 ≥ 1000; remainder 60 **<100** → merge tail, **not** a third micro-branch)
-- Branch 1: Feature flag + partial propagation (~530 LOC; slightly over 500 to absorb tail)
-- Branch 2: Event system + bulk + integration tests + docs (~530 LOC)
-
-**Feature Flag**: Yes - `lot_creation_stagger_propagation`
-
----
-
-### Scenario 4: Very Large Feature (>2000 LOC)
-
-**Story**: "Implement complete bidding system with live updates"
-
-**Total Estimate**: 2,400 LOC
-- Production: 1,000 LOC
-- Tests: 1,200 LOC
-- Docs: 200 LOC
-
-**Branch Strategy**: 5 branches (ceil(2400/500) = 5)
-- Branch 1: Feature flag infrastructure (~480 LOC; ≤500)
-- Branch 2: Data model + repositories (~480 LOC; ≤500)
-- Branch 3: Core bidding service + unit tests (~480 LOC; ≤500)
-- Branch 4: REST API + WebSocket (~480 LOC; ≤500)
-- Branch 5: Integration tests + optimizations (~480 LOC; ≤500)
-
-**Feature Flag**: Yes - `live_bidding_system`
-
-## Special Instructions
-
-### When Story is Ambiguous
-
-If requirements are unclear:
-
-```markdown
-## ⚠️ Clarification Needed
-
-Before creating implementation plan, need answers to:
-
-1. [Specific question about requirements]
-2. [Technical decision point]
-3. [Scope boundary question]
-
-**Suggested approach**: [Your recommendation]
-```
-
-### When Existing Code is Incomplete
-
-If you find gaps in current implementation:
-
-```markdown
-## 🔍 Critical Findings
-
-The story assumes X exists, but investigation shows:
-
-- **Missing**: [What's not implemented]
-- **Impact**: [How this affects the story]
-- **Recommendation**: [Adjust scope or create prerequisite stories]
-```
-
-### When Performance is Critical
-
-Include benchmark requirements:
-
-```markdown
-## Performance Requirements
-
-### Baseline (Current)
-- [Metric]: [Current value]
-
-### Target (After Implementation)
-- [Metric]: [Target value]
-- [Improvement]: [Percentage]
-
-### Measurement Strategy
-```bash
-# Benchmark commands
-[How to measure performance]
-```
-```
-
-## Command Usage Examples
-
-```bash
-# Basic usage with ticket number
-/atg:story-plan WBPR-3215
-
-# With story description
-/atg:story-plan "Implement lot end time propagation optimization for mid-catalog insertions"
-
-# With full story context
-/atg:story-plan "
-Story: WBPR-3215
-Title: Optimize lot end time propagation (Case D)
-Description: When a lot is created in the middle of the catalog, propagate end times only from the new lot onwards, not all lots.
-Acceptance Criteria:
-- Lots before insertion point unchanged
-- Lots from insertion point onwards recalculated
-- Performance improves for large catalogs (10k+ lots)
-"
-```
-
-## Integration with Other Commands
-
-This command works with:
-
-- **/atg:feature-flag**: Automatically integrates feature flag design
-- **/atg:story-impl**: Run after planning to align the current branch and produce a work queue from this plan
-- **/atg:verify**: Use to verify each branch before merging
-- **/gsd/changeset-wavebid-a2o** or **/atg:changeset**: Add a `.changeset/*.md` before shipping when service or UI paths change (or use **skip-changelog** on the PR)
-
-## Notes
-
-- **Be skeptical**: Question if features already exist before planning. Don't assume new code is needed.
-- **Be realistic**: Don't underestimate LOC, especially for tests
-- **Be modular**: Each branch should be independently testable
-- **Be safe**: Feature flags for any user-facing changes
-- **Be thorough**: Include all testing, docs, and cleanup in estimates
-- **Be curious**: use the AskUserQuestion tool to clarify any uncertainties before finalizing the plan.
-
-Look for opportunities to improve code quality or performance during implementation
-
-### Important
-- Ask questions everytime you need, do make asumptions on unclear/unverify stuff.
-
-## Next Steps
-
-1. If new feature with user-facing behavior: `/atg:feature-flag {description}`
-2. Start implementation on Branch 1 (see `## Branch strategy` in `bin/stories/{year}/{month}/{TICKET}-{slug}/implementation-plan.md`) — use `/atg:story-impl {TICKET}` to build the work queue for the current branch
-3. When implementation is done for a branch: `/atg:verify`
-4. Before opening a PR that touches `wavebid-a2o-service/` or `wavebid-a2o-ui/`: add a changeset (`/gsd/changeset-wavebid-a2o` or `/atg:changeset`) or plan the **`skip-changelog`** label on the PR
-5. After verify passes: `/atg:ship {TICKET} --branch {N}`
-6. After all branches merged: `/atg:retro {TICKET}`
+**Next:** `/atg:story-impl {TICKET}` (run `/atg:feature-flag` first if Branch 1 needs one).

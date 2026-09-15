@@ -136,8 +136,7 @@ Blocked: do NOT ship until missing ACs are addressed.
 ```
 → Migration test added, `/atg:story-gap WBPR-4032` re-run: all 5 ACs now ✅.
 
-**`/atg:testing-doc WBPR-4032`** — fills in the `testing-guide-template` command's structure
-(that command isn't run directly; `testing-doc` reads it):
+**`/atg:testing-doc WBPR-4032`** — fills in the template from the `atg-testing-guide` skill:
 ```
 📝 Generated bin/stories/2026/03/WBPR-4032-lot-address/testing/TESTING-GUIDE.md
    1 shared setup (auth), 3 scenarios (null→inherited, explicit-set retained, migration safety)

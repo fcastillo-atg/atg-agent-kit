@@ -1,283 +1,141 @@
 ---
-description: Optional Socratic pre-story analysis — surface ambiguities and cross-cutting concerns before story-plan runs
+description: Optional Socratic pre-story analysis. Surfaces ambiguities and cross-cutting concerns before story-plan runs
 ---
 
-# Brief: Pre-Story Deep-Dive
+# Brief
 
-**Purpose:** Optional Phase 0 before `/atg:story-plan`. Runs a structured analysis of the story to surface ambiguities, missing details, and cross-cutting concerns. Use for complex or risky stories to avoid mid-implementation surprises.
-
-Run `/atg:scout` first if nobody has. Brief answers "how do we build it?" and assumes the ticket is
-true. Scout is what checks that. Planning a story whose premises are false wastes the whole brief.
+Optional Phase 0 before `/atg:story-plan`. Analyses the story for vague ACs, codebase gaps,
+cross-cutting concerns, and scope risks, asks up to three targeted questions, and writes
+`## Pre-Analysis` so story-plan can skip its own analysis. Brief assumes the ticket is true;
+`/atg:scout` is what checks that. Run scout first if nobody has.
 
 ## Usage
 
 ```bash
-/atg:brief {TICKET}            # interactive — asks up to 3 questions if gaps found
-/atg:brief {TICKET} --auto     # silent — log all assumptions, ask no questions
-/atg:brief {TICKET} --discuss  # force interactive Socratic mode (all gaps surfaced)
+/atg:brief {TICKET}            # interactive: up to 3 questions if gaps are found
+/atg:brief {TICKET} --auto     # silent: log assumptions, ask nothing
+/atg:brief {TICKET} --discuss  # Socratic: ask about every gap, no limit
 ```
 
-## When to Use
+Use brief when the story has vague ACs ("improve performance", "refactor X"), touches shared
+infrastructure (RabbitMQ, Aurora, Redis, S3, Liquibase), is over 8 points or 500 LOC, has open
+questions or unresolved comments, or the team asked for a design review.
 
-Use `/atg:brief` **instead of going straight to `/atg:story-plan`** when any of the following apply:
+## Steps
 
-- Story has vague ACs ("improve performance", "refactor X", "redesign Y flow")
-- Story touches shared infrastructure (RabbitMQ, Aurora, Redis, S3, Liquibase)
-- Story points > 8 or expected LOC > 500
-- Story description has open questions or unresolved comments in Jira
-- The team has asked for a design review before implementation
+### 1. Fetch the story
 
-## Execution Steps
+Resolve the ticket and story directory per the **atg-story-artifacts** skill. Fetch summary,
+description, and comments per the **jira-cli** skill; if unreachable, ask the user to paste them.
+Write or update `{TICKET}-story.md` with title, description, ACs, `## Jira comments (summary)`,
+and the browse URL.
 
-### Step 1: Fetch the story
-
-Resolve per the **jira-cli** skill: `acli jira workitem view {TICKET} --fields summary,description,comment --json` first, falling back to `mcp__mcp-atlassian__jira_get_issue`.
-
-If both are unavailable, ask the user to paste the story description and any relevant comments.
-
-Write (or update) `bin/stories/{year}/{month}/{TICKET}-{slug}/{TICKET}-story.md` with:
-- Title, description, acceptance criteria
-- `## Jira comments (summary)` — bullet summary of substantive comments
-- Link: `https://auctiontechnologygroup.atlassian.net/browse/{TICKET}`
-
-### Step 2: Assess complexity signals
-
-Evaluate the story against these signals:
+### 2. Score complexity
 
 | Signal | Weight |
-|--------|--------|
+|---|---|
 | Vague AC (no measurable outcome) | High |
-| Touches ≥ 2 bounded contexts | Medium |
 | Requires Liquibase migration | High |
 | Requires new RabbitMQ event | High |
-| Story points > 8 | Medium |
-| Estimated LOC > 500 | Medium |
-| AC references external system (AWS, SLB, ATGPay) | High |
-| AC says "refactor" without specifying scope | High |
+| AC references an external system (AWS, SLB, ATGPay) | High |
+| AC says "refactor" without scope | High |
+| Touches 2+ bounded contexts | Medium |
+| Story points > 8 or LOC > 500 | Medium |
 
-### Step 3: Run 4-lens analysis
+### 3. Four-lens analysis
 
-Evaluate the story through 4 lenses and note any gaps:
+**Lens 1, vague ACs.** Is each AC specific and measurable? Could you write a failing test for it
+now? If not, what is missing?
 
-**Lens 1: Vague ACs**
-- Are acceptance criteria specific and measurable?
-- Can you write a failing test for each AC right now?
-- If not, what's missing?
+**Lens 2, codebase gaps.** Does the service, repository, entity, mapper, migration, or flag
+infrastructure exist? Search and note absences. Defined is not the same as evaluated: a domain
+can have a rich configuration model, enums, override cascades, and CRUD while nothing consumes
+it. Grep the enum value or constant in use, not where it is declared. One hit means a definition
+with no engine behind it, and a story that assumes the capability is a build, not an integration.
+This is the most expensive gap to find late. Also note fields persisted on the entity but dropped
+by the response model: the data exists, only the contract is lossy.
 
-**Lens 2: Codebase gaps**
-- Does the required infrastructure exist in the codebase?
-  - Service, repository, entity, mapper for the relevant domain?
-  - Liquibase migrations if schema changes are needed?
-  - Feature flag infrastructure if needed?
-- Search the codebase for related classes; note any that are absent.
-- **Defined is not the same as evaluated.** A domain can have a rich configuration model, enums,
-  override cascades and CRUD, while nothing ever consumes it. Grep the enum value or constant in
-  *use*, not where it is declared. One hit means it is a definition with no engine behind it, and a
-  story that assumes the capability is a build, not an integration. This is the single most expensive
-  gap to find late.
-- If a field the story needs is persisted on the entity but dropped by the response model, note it.
-  The data exists; only the contract is lossy.
-
-**Lens 3: Cross-cutting concerns**
-
-Run through the ATG cross-cutting checklist:
+**Lens 3, cross-cutting concerns.**
 
 | Concern | Trigger | Action |
-|---------|---------|--------|
-| Liquibase migration | Any new DB field, table, or index | Add migration to Branch 1 estimate |
-| Feature flag needed | Any user-facing behavior change | Plan flag in Branch 1 |
-| RabbitMQ event | Any state change consumed by other services | Identify event schema |
-| Soft-delete pattern | Any deletion logic | Use `disable()`, not `delete()` |
-| UUIDv7 | Any new entity with primary key | Use `UuidCreator.timeOrderedEpochPlus1()` |
-| MapStruct mapping | Any new entity ↔ model conversion | Plan mapper in same branch as entity |
-| `@Transactional` | Any multi-step DB operation | Annotate service method |
-| Money precision | Any amount read, moved, or displayed | Carry stored values through. Amounts are scale-2 `HALF_EVEN`; do not re-round or re-derive them from rates |
-| Downstream rewrite | Any payload posted to another service | Check what the receiver normalizes, strips, or merges before persisting, then verify by reading the record back. A success status is not proof it stored what you sent |
+|---|---|---|
+| Liquibase migration | New DB field, table, or index | Add to Branch 1 estimate |
+| Feature flag | User-facing behaviour change | Plan flag in Branch 1 |
+| RabbitMQ event | State change consumed by other services | Identify event schema |
+| Soft delete | Any deletion | `disable()`, not `delete()` |
+| UUIDv7 | New entity primary key | `UuidCreator.timeOrderedEpochPlus1()` |
+| MapStruct | New entity ↔ model conversion | Mapper in the same branch as the entity |
+| `@Transactional` | Multi-step DB operation | Annotate the service method |
+| Money precision | Any amount read, moved, or displayed | Carry stored values through; scale-2 `HALF_EVEN`; never re-round or re-derive from rates |
+| Downstream rewrite | Payload posted to another service | Check what the receiver normalizes, strips, or merges, then read the record back. A success status is not proof it stored what you sent |
 
-**Lens 4: Scope risks**
-- Does the AC mention "all X" or "bulk" operations? → Could be N+1 or performance risk.
-- Does the AC mention "backward compatible"? → Needs deprecation path.
-- Does the AC mention "real-time" or "live"? → Might need WebSocket or polling.
-- Is the AC in conflict with another open story or recent change?
-- **Where can the boundary go so this does not queue behind in-flight work?** Check the epic for
-  siblings In Development. If the story's last step depends on one of them, consider stopping one
-  step earlier and naming the handoff. A story that ends at "produce the thing" instead of "produce
-  and send it" can be built and tested alone, on nobody's critical path. State the boundary in the
-  plan, or it drifts.
-- **If a needed capability only partly exists, say what the story will not cover.** An honest limit
-  in the contract beats a contract that implies full coverage. Whoever implements it will otherwise
-  assume the gap is theirs to fill.
+**Lens 4, scope risks.** "All X" or "bulk" → N+1 or performance risk. "Backward compatible" →
+deprecation path. "Real-time" → WebSocket or polling. Conflict with another open story or recent
+change. Then two harder questions:
 
-### Step 4: Decide — questions or assumptions
+- Where can the boundary go so this does not queue behind in-flight work? Check the epic for
+  siblings In Development. If the last step depends on one of them, consider stopping one step
+  earlier and naming the handoff. A story that ends at "produce the thing" instead of "produce
+  and send it" can be built and tested alone. State the boundary in the plan or it drifts.
+- If a needed capability only partly exists, say what the story will not cover. An honest limit
+  beats a contract that implies full coverage; otherwise the implementer assumes the gap is theirs.
 
-Before asking anything, check it is not already answered. Look in the PRD's open-question tables,
-Jira comments on this ticket and its siblings, and sibling descriptions that record a call. Asking a
+### 4. Questions or assumptions
+
+Before asking anything, check it is not already answered: PRD open-question tables, Jira
+comments on this ticket and its siblings, sibling descriptions that record a call. Asking a
 closed question costs credibility and a day.
 
-Then check whose question it is. Scope, priority and what counts as done go to product. What another
-service's code does goes to that service's owner. Where data lives, which repo owns a capability,
-and transport direction are engineering calls the user can make now. Only the last kind belongs in
-`AskUserQuestion`; surface the others as escalations in the write-up instead of stalling on them.
+Then check whose question it is. Scope, priority, and what counts as done go to product. What
+another service's code does goes to that service's owner. Where data lives, which repo owns a
+capability, and transport direction are engineering calls the user can make now. Only the last
+kind goes to AskUserQuestion; surface the others as escalations in the write-up.
 
-**Default (interactive):**
-- If ≥1 gap found: ask up to **3 targeted questions**, **one at a time** — wait for the answer before surfacing the next.
-- **Use the `AskUserQuestion` tool** for every question. Do NOT output questions as plain markdown text.
-  - Set `question` to the gap label + the concrete question (e.g. `[Gap: vague AC] AC 3 says "improve lot import performance" — what's the target?`).
-  - Set `header` to a short chip label (≤12 chars, e.g. `Perf target`).
-  - The **recommended answer becomes the first option**, labelled `"… (Recommended)"`.
-  - Each option needs a `label` and a `description`. Add 2–3 concrete alternatives (the tool always appends an "Other" option for free-text).
-  - Use `multiSelect: false` unless the gap genuinely requires multi-select.
-- After the user picks an option, record the answer in `## Pre-Analysis`, then ask the next question (if any) — again via `AskUserQuestion`.
+- **Interactive (default):** up to 3 questions, one AskUserQuestion call at a time, wait for
+  each answer. `question` = gap label plus the concrete question (`[Gap: vague AC] AC 3 says
+  "improve import performance". What is the target?`). `header` ≤ 12 chars. Recommended answer
+  first, labelled `(Recommended)`. 2–3 concrete alternatives, each with label and description.
+  `multiSelect: false` unless the gap truly needs it. Record each answer in Pre-Analysis before
+  asking the next. Never print questions as plain markdown.
+- **`--auto`:** ask nothing. Log each assumption explicitly:
+  `Assumption (AC 3): interpreting "improve performance" as P95 import time down ≥50%.`
+- **`--discuss`:** ask about every gap, still one call at a time, Socratic: pose the hypothetical,
+  recommend, ask the user to confirm or redirect.
 
-**With `--auto`:**
-- Do not ask questions.
-- Log each assumption explicitly:
+### 5. Write Pre-Analysis
 
-```
-Assumption (AC 3): Interpreting "improve performance" as reducing P95 lot import time by ≥50%.
-Assumption (schema): Treating invoice_status as a new column on the lot table (nullable, varchar(32)).
-```
-
-**With `--discuss`:**
-- Ask about every gap found, no limit on questions — still **one `AskUserQuestion` call at a time**.
-- Use Socratic mode: pose hypotheticals, give a recommended answer as the first option, and ask the user to confirm or redirect.
-
-### Step 5: Write Pre-Analysis section
-
-Write a `## Pre-Analysis` section to the beginning of `bin/stories/{year}/{month}/{TICKET}-{slug}/implementation-plan.md` (create the file if it doesn't exist):
+Prepend `## Pre-Analysis` to `implementation-plan.md` (create the file if needed):
 
 ```markdown
 ## Pre-Analysis
-
-**Run:** {date}
-**Mode:** {interactive|auto|discuss}
+**Run:** {date}   **Mode:** {interactive|auto|discuss}
 
 ### Complexity signals
-- {signal}: {description}
-
 ### Cross-cutting concerns identified
-- {concern}: {action required}
-
 ### Assumptions logged
-- {assumption}
-
-### Known limits
-- {what this story will not cover, and why} — omit the section only if there are none
-
-### Open questions (if any)
-- {question} — name who answers it: user, product, or another service's owner
-
-### Recommendation
-{1-2 sentences: is this ready for story-plan, or does it need clarification first?}
+### Known limits            (omit only if none)
+### Open questions (if any) (name who answers: user, product, or another service's owner)
+### Recommendation          (ready for story-plan, or needs clarification first?)
 ```
 
-Keep the plan in `bin/`. If the ticket itself is wrong, that is scout's output, not brief's. Never
-edit a Jira description from here, and when suggesting one, propose surgical changes that name what
-stays rather than a replacement body.
+Then set the `## Next ATG command` footer per **atg-story-artifacts**: `/atg:story-plan {TICKET}`
+when all questions were answered or `--auto`; otherwise "Re-run `/atg:brief {TICKET}` to resume,
+or run `/atg:story-plan {TICKET}` and answer remaining questions inline."
 
-### Step 5b: Append `## Next ATG command` to `implementation-plan.md` (required)
+If the ticket itself is wrong, that is scout's output. Never edit a Jira description from here;
+when suggesting one, propose surgical changes that name what stays.
 
-After `## Pre-Analysis` is in place, ensure **`implementation-plan.md` ends with** a footer that **matches the chat handoff** (same wording in both places).
+Never `git add` anything under `bin/`.
 
-- If the file already has `## Next ATG command` from a prior brief run, **replace** that section — do not stack duplicate footers.
-- Use the **real ticket key** (not `{TICKET}`) in the body.
+### 6. Report
 
-**If all questions have been answered via `AskUserQuestion`** (or `--auto`):
-
-```markdown
----
-
-## Next ATG command
-
-`/atg:story-plan WBPR-4095`
-```
-
-**If the brief ended before all questions were answered** (e.g. session interrupted):
-
-```markdown
----
-
-## Next ATG command
-
-Re-run `/atg:brief WBPR-4095` to resume, or run `/atg:story-plan WBPR-4095` and answer
-remaining questions inline.
-```
-
-### Step 6: Do not commit
-
-`bin/stories/` is local scratch, not repo content — **never** `git add` or `git commit` anything
-under `bin/`. Leave the story file and `implementation-plan.md` written to disk but untracked. A
-small, repo-committed plan (if/when needed) is a separate, later step — not part of `/atg:brief`.
-
-### Step 7: Print summary and hand off
-
-End the assistant message with the **same `## Next ATG command` lines** you wrote to `implementation-plan.md` (Step 5b), then the standard summary block:
+End the reply with the same footer lines, then:
 
 ```
-✅ Pre-analysis complete for {TICKET}
-
-Complexity: {Low|Medium|High}
-Cross-cutting concerns: {N}
-  → {concern 1}
-  → {concern 2}
-
+Pre-analysis complete for {TICKET}
+Complexity: {Low|Medium|High}   Cross-cutting concerns: {N}
+  → {concern}
 Written to: bin/stories/{year}/{month}/{TICKET}-{slug}/implementation-plan.md
-
-{Repeat the Next ATG command block here verbatim — see Step 5b}
 ```
 
-## Integration with story-plan
-
-When `/atg:story-plan` runs and finds a `## Pre-Analysis` section in `implementation-plan.md`, it **skips its own analysis phase** and uses the pre-analysis as input instead. This prevents redundant analysis and ensures the brief's findings are carried forward.
-
-## Example: High-complexity story
-
-```
-/atg:brief WBPR-4099
-
-📖 Fetching WBPR-4099 from Jira...
-   Title: Bulk lot end-time propagation for mid-catalog insertions
-   ACs: 6  |  Comments: 3 substantive
-
-🔍 4-lens analysis...
-
-  Lens 1 - Vague ACs:
-    ⚠️  AC 4: "system should be fast" — no target metric defined
-
-  Lens 2 - Codebase gaps:
-    ✅  LotPropagationService exists
-    ✅  LotRepository.findByAuctionId exists
-    ❌  No bulk update query — will need custom JPQL or batch update
-
-  Lens 3 - Cross-cutting:
-    🔴 Liquibase migration — new index on lot.auction_id + lot.sequence (performance)
-    🟡 Feature flag — user-facing propagation behavior change
-    🟡 @Transactional — multi-step propagation update
-
-  Lens 4 - Scope risks:
-    ⚠️  "all lots from insertion point onwards" — could be N+1 for large catalogs
-
-Complexity: HIGH
-
-*(Then calls AskUserQuestion for Round 1 — one question at a time:)*
-
-AskUserQuestion({
-  questions: [{
-    question: "[Gap: vague AC] AC 4 says 'system should be fast' — what's the acceptable propagation time for a 10,000-lot catalog? (Baseline: ~45s)",
-    header: "Perf target",
-    multiSelect: false,
-    options: [
-      { label: "Under 60s P95 for 10k lots (Recommended)", description: "Baseline ~45s, gives 15s headroom" },
-      { label: "Under 30s P95 for 10k lots", description: "Aggressive — may need batch tuning" },
-      { label: "No SLA defined", description: "Just make it faster than today" }
-    ]
-  }]
-})
-
-*(After the user picks "Under 60s P95 …", the agent records the answer and calls AskUserQuestion again for Round 2.)*
-```
-
-## Next Steps
-
-1. Review Pre-Analysis in `bin/stories/{year}/{month}/{TICKET}-{slug}/implementation-plan.md`
-2. Run `/atg:story-plan {TICKET}` — it will read the brief and skip its own analysis
+**Next:** `/atg:story-plan {TICKET}` (it reads Pre-Analysis and skips its own analysis).

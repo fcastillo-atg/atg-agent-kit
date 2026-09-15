@@ -25,6 +25,8 @@ For each relevant change, verify whether it introduces one or more of these conc
 5. Multi-step DB operation -> consider `@Transactional`
 6. User-facing behavior change -> evaluate feature-flag requirement (`/atg:feature-flag`)
 7. State changes consumed externally -> evaluate RabbitMQ event/schema updates
+8. Any amount read, moved, or displayed -> carry stored values through; amounts are scale-2 `HALF_EVEN`, never re-round or re-derive from rates
+9. Any payload posted to another service -> check what the receiver normalizes, strips, or merges, then read the record back; a success status is not proof it stored what you sent
 
 ## Output format
 
