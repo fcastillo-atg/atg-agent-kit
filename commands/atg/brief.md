@@ -6,6 +6,9 @@ description: Optional Socratic pre-story analysis — surface ambiguities and cr
 
 **Purpose:** Optional Phase 0 before `/atg:story-plan`. Runs a structured analysis of the story to surface ambiguities, missing details, and cross-cutting concerns. Use for complex or risky stories to avoid mid-implementation surprises.
 
+Run `/atg:scout` first if nobody has. Brief answers "how do we build it?" and assumes the ticket is
+true. Scout is what checks that. Planning a story whose premises are false wastes the whole brief.
+
 ## Usage
 
 ```bash
@@ -67,6 +70,13 @@ Evaluate the story through 4 lenses and note any gaps:
   - Liquibase migrations if schema changes are needed?
   - Feature flag infrastructure if needed?
 - Search the codebase for related classes; note any that are absent.
+- **Defined is not the same as evaluated.** A domain can have a rich configuration model, enums,
+  override cascades and CRUD, while nothing ever consumes it. Grep the enum value or constant in
+  *use*, not where it is declared. One hit means it is a definition with no engine behind it, and a
+  story that assumes the capability is a build, not an integration. This is the single most expensive
+  gap to find late.
+- If a field the story needs is persisted on the entity but dropped by the response model, note it.
+  The data exists; only the contract is lossy.
 
 **Lens 3: Cross-cutting concerns**
 
@@ -81,14 +91,33 @@ Run through the ATG cross-cutting checklist:
 | UUIDv7 | Any new entity with primary key | Use `UuidCreator.timeOrderedEpochPlus1()` |
 | MapStruct mapping | Any new entity ↔ model conversion | Plan mapper in same branch as entity |
 | `@Transactional` | Any multi-step DB operation | Annotate service method |
+| Money precision | Any amount read, moved, or displayed | Carry stored values through. Amounts are scale-2 `HALF_EVEN`; do not re-round or re-derive them from rates |
+| Downstream rewrite | Any payload posted to another service | Check what the receiver normalizes, strips, or merges before persisting, then verify by reading the record back. A success status is not proof it stored what you sent |
 
 **Lens 4: Scope risks**
 - Does the AC mention "all X" or "bulk" operations? → Could be N+1 or performance risk.
 - Does the AC mention "backward compatible"? → Needs deprecation path.
 - Does the AC mention "real-time" or "live"? → Might need WebSocket or polling.
 - Is the AC in conflict with another open story or recent change?
+- **Where can the boundary go so this does not queue behind in-flight work?** Check the epic for
+  siblings In Development. If the story's last step depends on one of them, consider stopping one
+  step earlier and naming the handoff. A story that ends at "produce the thing" instead of "produce
+  and send it" can be built and tested alone, on nobody's critical path. State the boundary in the
+  plan, or it drifts.
+- **If a needed capability only partly exists, say what the story will not cover.** An honest limit
+  in the contract beats a contract that implies full coverage. Whoever implements it will otherwise
+  assume the gap is theirs to fill.
 
 ### Step 4: Decide — questions or assumptions
+
+Before asking anything, check it is not already answered. Look in the PRD's open-question tables,
+Jira comments on this ticket and its siblings, and sibling descriptions that record a call. Asking a
+closed question costs credibility and a day.
+
+Then check whose question it is. Scope, priority and what counts as done go to product. What another
+service's code does goes to that service's owner. Where data lives, which repo owns a capability,
+and transport direction are engineering calls the user can make now. Only the last kind belongs in
+`AskUserQuestion`; surface the others as escalations in the write-up instead of stalling on them.
 
 **Default (interactive):**
 - If ≥1 gap found: ask up to **3 targeted questions**, **one at a time** — wait for the answer before surfacing the next.
@@ -132,12 +161,19 @@ Write a `## Pre-Analysis` section to the beginning of `bin/stories/{year}/{month
 ### Assumptions logged
 - {assumption}
 
+### Known limits
+- {what this story will not cover, and why} — omit the section only if there are none
+
 ### Open questions (if any)
-- {question}
+- {question} — name who answers it: user, product, or another service's owner
 
 ### Recommendation
 {1-2 sentences: is this ready for story-plan, or does it need clarification first?}
 ```
+
+Keep the plan in `bin/`. If the ticket itself is wrong, that is scout's output, not brief's. Never
+edit a Jira description from here, and when suggesting one, propose surgical changes that name what
+stays rather than a replacement body.
 
 ### Step 5b: Append `## Next ATG command` to `implementation-plan.md` (required)
 
