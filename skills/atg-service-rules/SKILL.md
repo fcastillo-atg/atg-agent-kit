@@ -25,6 +25,15 @@ Read the relevant ones before writing code, and cite them by number when flaggin
 Gradle runs from `wavebid-a2o-service/`. Never pass `--no-daemon`. Coverage gates are ≥85%
 branch and ≥95% line (`koverVerify`).
 
-When a change adds an entity, schema field, delete path, multi-step write, or user-visible
-behaviour, check the cross-cutting list in `/atg:brief` Lens 3 (migration, feature flag,
-RabbitMQ event, soft delete, UUIDv7, MapStruct, `@Transactional`, money precision).
+## When the rule docs are not loaded
+
+Some harnesses do not read `.claude/rules/`. Three sibling skills carry the essentials so the
+conventions still travel with the kit:
+
+- `atg-conventions-guard`: Kotlin, Spring/JPA, Spock, feature-flag file, and hygiene checks
+- `atg-cross-cutting-spotter`: migration, UUIDv7, MapStruct, soft delete, `@Transactional`,
+  feature flag, events, money precision, downstream rewrites
+- `atg-pr-self-review`: pre-ship sanity pass (clean tree, slice alignment, leftovers, changeset)
+
+They are deliberately short. The rule docs stay the authority; when both are available, the
+rule docs win.

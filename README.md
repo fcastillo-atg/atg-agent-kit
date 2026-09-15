@@ -16,10 +16,16 @@ skill, never into a command's procedure text. See [Contributing](#contributing).
 | `atg-lifecycle` | The command graph: order, which steps block, which are advisory, which stay manual, and what runs next after each |
 | `atg-testing-guide` | Scenario-versus-step vocabulary, variable conventions for guide, test-run and Jira, and the `TESTING-GUIDE.md` template (`template.md`) |
 | `atg-service-rules` | Pointer table into `wavebid-a2o-service/.claude/rules/` by what you are touching, plus the Gradle and coverage rules |
+| `atg-conventions-guard` | Portable copy of the Kotlin, Spring/JPA, Spock and feature-flag conventions, for harnesses that do not load `.claude/rules/` |
+| `atg-cross-cutting-spotter` | Portable cross-cutting checklist: migration, UUIDv7, MapStruct, soft delete, `@Transactional`, flags, events, money, downstream rewrites |
+| `atg-pr-self-review` | Pre-ship sanity pass: clean tree, slice alignment, leftover `TODO`/`println`, changeset gate |
 | `jira-cli` | Jira via `acli` with `mcp-atlassian` fallback, token-efficient field selection, the ADF comment recipe |
 | `dynatrace-mcp` | Dynatrace log and metric queries via the `dynatrace-mcp` MCP server, with `reference.md` for accumulated gotchas |
 
 Skills load automatically when their description matches. Commands are invoked by name.
+The three portable convention skills overlap the service rule docs on purpose: rule docs are
+the authority in Claude Code, and the skills keep the conventions available in harnesses that
+only load skills. When editing a convention, update the rule doc first, then the skill.
 
 ## Commands
 
