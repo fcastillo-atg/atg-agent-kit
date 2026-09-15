@@ -19,6 +19,7 @@ skill, never into a command's procedure text. See [Contributing](#contributing).
 | `atg-conventions-guard` | Portable copy of the Kotlin, Spring/JPA, Spock and feature-flag conventions, for harnesses that do not load `.claude/rules/` |
 | `atg-cross-cutting-spotter` | Portable cross-cutting checklist: migration, UUIDv7, MapStruct, soft delete, `@Transactional`, flags, events, money, downstream rewrites |
 | `atg-pr-self-review` | Pre-ship sanity pass: clean tree, slice alignment, leftover `TODO`/`println`, changeset gate |
+| `unslop` | Writing rules for anything a person reads (PR bodies, Jira comments, replies, briefs). Vendored from `cursor/plugins` so consumers need no separate install |
 | `jira-cli` | Jira via `acli` with `mcp-atlassian` fallback, token-efficient field selection, the ADF comment recipe |
 | `dynatrace-mcp` | Dynatrace log and metric queries via the `dynatrace-mcp` MCP server, with `reference.md` for accumulated gotchas |
 

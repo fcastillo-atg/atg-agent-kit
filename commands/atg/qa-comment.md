@@ -57,7 +57,7 @@ Postman variable rules: **atg-testing-guide**. Paths and the never-reference-`bi
    curl -si -X DELETE "{{baseURL}}/api/v3/houses/{{houseId}}/{endpoint}" -H "Authorization: Bearer {{token}}"
    ```
 
-5. **Assemble** using the template below. The AI-disclaimer line is mandatory in every comment
+5. **Assemble** using the template below, prose per the **unslop** skill. The AI-disclaimer line is mandatory in every comment
    and must appear verbatim, never paraphrased. If `TESTING-PROGRESS.md` shows every scenario
    PASS, append `*Locally verified — all {N} scenarios passed.*` without naming the file.
    Grep the result for `bin/` and fix any hit.

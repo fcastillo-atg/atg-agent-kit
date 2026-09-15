@@ -23,6 +23,8 @@ below runs per finding.
 
 ## Comment style
 
+Apply the **unslop** skill, then these rules:
+
 - One to three sentences: the defect and its concrete consequence, not "this looks wrong".
 - Quote identifiers in single quotes (`'sanitize()'`).
 - Blank line, then the fix: a short code block if code, one line otherwise. Optional closing line

@@ -49,7 +49,7 @@ atg-story-artifacts skill.
    (`../pull_request_template.md` from the service). Missing: abort, never write a free-form body.
 
 7. **Build the body.** Prepend the ATG block above `#### Requirements`. Keep every template
-   checklist item intact. Replace `LINK_TO_JIRA` with
+   checklist item intact. Write the prose per the **unslop** skill. Replace `LINK_TO_JIRA` with
    `[{TICKET}](https://auctiontechnologygroup.atlassian.net/browse/{TICKET})`.
 
    ```markdown

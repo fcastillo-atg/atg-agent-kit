@@ -41,7 +41,7 @@ Default to no skip flags so the matrix prints first and the user approves each s
    | Value | Criteria | Proposed action column |
    |---|---|---|
    | ✅ fix | File is in the diff and the issue is real | Short description of the code change |
-   | ✅ answer | Question or clarification, no code change | Draft reply text |
+   | ✅ answer | Question or clarification, no code change | Draft reply text (prose per the **unslop** skill) |
    | ⚠️ stale | File not in diff, known intentional pattern, or false alarm | Optional short reply |
    | ❌ skip | Bot boilerplate, template noise | None |
 

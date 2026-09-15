@@ -48,7 +48,7 @@ or touches PRs. Writes `EXPLAIN.md` into an existing story directory (per
    flips in specs. Give them their own subsection. If a product A/B choice is unclear, write
    "unclear from ticket — ask product". Never pick a side.
 
-5. **Emit the brief** in this fixed shape, PR-walkthrough length, no raw diff, no file list.
+5. **Emit the brief** (prose per the **unslop** skill) in this fixed shape, PR-walkthrough length, no raw diff, no file list.
 
    ```markdown
    ## Verdict
