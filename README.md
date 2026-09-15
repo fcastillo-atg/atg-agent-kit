@@ -24,6 +24,7 @@ handful are cross-cutting tools you can reach for at any point in that life cycl
 
 | Command | Stage | What it does |
 |---|---|---|
+| `/atg:scout` | Groom | Audits a ticket against the codebase before pointing it. Verifies cited claims, dependencies and tags, then returns a pointable/blocked verdict with a drafted question. Read-only. |
 | `/atg:brief` | Plan (optional) | Socratic pre-story analysis — surfaces ambiguities and cross-cutting concerns before `story-plan` runs. |
 | `/atg:story-plan` | Plan | Creates a branch-split implementation plan for a WBPR story — LOC estimate, feature-flag strategy, branch breakdown, As-built placeholder. |
 | `/atg:story-impl` | Implement | Executes the story-plan for the current branch — aligns git state, builds a work queue from `implementation-plan.md`. |
