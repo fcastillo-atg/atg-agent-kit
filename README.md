@@ -30,7 +30,7 @@ only load skills. When editing a convention, update the rule doc first, then the
 
 ## Commands
 
-19 `/atg:*` commands. Most support one story's life cycle end to end; a handful are
+20 `/atg:*` commands. Most support one story's life cycle end to end; a handful are
 cross-cutting tools you can reach for at any point.
 
 ### Life-cycle commands
