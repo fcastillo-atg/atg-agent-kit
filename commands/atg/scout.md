@@ -23,6 +23,8 @@ point it?"; `/atg:brief` answers "how do we build it?". Most tickets never need 
    unchecked as provisional.
 3. **Quote the evidence.** `file:line` for code, verbatim for ticket and PRD text.
 4. **No speculative scoping.** Audit the ticket; do not redesign the work.
+5. **Check who wrote it.** A gap in text your own team drafted is a defect to fix, not a question to
+   route. Only questions needing product or another service's owner stay open.
 
 ## Steps
 
@@ -47,7 +49,11 @@ Look especially for: an endpoint on a different verb, path, or content type; a f
 persists but the response model drops; a capability that is a definition with no evaluator
 (grep the constant in use, not where declared); a response shape that is single when the ticket
 says list, or per-lot when it needs per-bidder; a downstream service that rewrites what you send
-(silent deletion returns a success status).
+(silent deletion returns a success status); a count or list that drifted from its source, because an
+enum gained a value or a compression pass dropped one.
+
+Re-count every enumeration against the code rather than trusting the prose. Compression is where stale
+numbers are born: when a ticket was shortened, each surviving number was carried over, not recomputed.
 
 ### 2. Verify dependencies
 
@@ -97,6 +103,14 @@ Try to close the ticket's own open questions by reading the codebase; many are "
 two is true" with the answer on disk. Watch for "neither", where the question assumed a
 capability that does not exist. That reframes "needs a decision" as "blocked on unbuilt work".
 
+The codebase means every repo the answer could live in, not just the one checked out. Another ATG
+repo is readable with the `gh` commands in step 1; never call something unverifiable until you have
+tried that. A field's own KDoc and the service validation around it settle most "what are the
+semantics" questions.
+
+Also grep any term the ticket introduces. If the only hit is the ticket itself or your own draft, the
+term is invented, and the fix is rewriting the line, not asking what it means.
+
 ### 7. Verdict
 
 | Verdict | Meaning |
@@ -130,6 +144,9 @@ Lead with `{TICKET}: {VERDICT}. {One sentence why.}` Then, in order: what is wro
 cause, each with `file:line` or a quote); ticket edits as paste-ready text; the one question and
 who answers it (or that it is already answered); what you could not verify and which findings
 depend on it.
+
+What you could not verify goes in the proposed ticket edit too, not only in the audit, so the next
+reader does not repeat the search.
 
 ```
 WBPR-0000: BLOCKED. Nothing stores the value this ticket filters on.

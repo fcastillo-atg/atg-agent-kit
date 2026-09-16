@@ -118,6 +118,13 @@ Prepend `## Pre-Analysis` to `implementation-plan.md` (create the file if needed
 ### Recommendation          (ready for story-plan, or needs clarification first?)
 ```
 
+Before an item earns a place under **Open questions**, try to answer it. Read the field's own KDoc and
+the validation around it; grep the enum rather than trusting a count in the prose; reach another ATG
+repo with the `gh` commands in `/atg:scout` step 1. A question about text your own team wrote is a
+defect to fix, not a question to route, and a design decision engineering owns belongs in the plan as a
+recommendation with its reasoning, not as a blank question. What survives is what only product or
+another service's owner can answer.
+
 Then set the `## Next ATG command` footer per **atg-story-artifacts**: `/atg:story-plan {TICKET}`
 when all questions were answered or `--auto`; otherwise "Re-run `/atg:brief {TICKET}` to resume,
 or run `/atg:story-plan {TICKET}` and answer remaining questions inline."
