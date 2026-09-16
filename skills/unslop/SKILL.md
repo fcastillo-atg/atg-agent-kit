@@ -11,6 +11,13 @@ Jira comments, review replies, briefs, docs. Update by re-copying from upstream,
 
 Edit text to remove AI patterns and add human voice.
 
+## When to apply
+
+Apply this to every piece of text right before it leaves the conversation — a debugging summary,
+a Slack message, a Jira or PR comment, a doc update, a commit message. Running it once earlier in
+a session does not cover what comes after: each new draft gets its own pass, immediately before
+it's shown or sent, not folded into a "did it earlier" assumption.
+
 ## Process
 
 1. Scan for the patterns below.
