@@ -25,11 +25,19 @@ below runs per finding.
 
 Apply the **unslop** skill, then these rules:
 
-- One to three sentences: the defect and its concrete consequence, not "this looks wrong".
+- Start the body with a `[{Area}] {emoji} {Severity}:` prefix, matching this repo's review-bot
+  convention. Area is one of `Backend`, `Frontend`, `DevOps`, `QA`, `PM`, `Senior` — infer it from
+  the finding's file path (`wavebid-a2o-service` → Backend, `wavebid-a2o-ui` → Frontend,
+  `scripts/`, `.github/` → DevOps; use `QA` for a test-coverage gap and `Senior`/`PM` only for a
+  non-blocking design note, not a defect). Severity is `🔴 Must fix` for something that breaks
+  behavior or a build gate, `🟡 Should fix` for a real but non-blocking defect, or `💬 NOTE
+  (non-blocking)` for an observation with no required action.
+- One to three sentences after the prefix: the defect and its concrete consequence, not "this
+  looks wrong".
 - Quote identifiers in single quotes (`'sanitize()'`).
 - Blank line, then the fix: a short code block if code, one line otherwise. Optional closing line
   on why the fix is cheap.
-- No headers, bullets, labels, preamble, or praise.
+- No headers, bullets, preamble, or praise beyond the one `[Area] emoji Severity:` prefix.
 
 ## Steps
 
