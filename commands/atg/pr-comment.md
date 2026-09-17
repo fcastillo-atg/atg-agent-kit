@@ -25,20 +25,17 @@ below runs per finding.
 
 Apply the **unslop** skill, then these rules:
 
-- Start the body with a `[{Area}] {emoji} {Severity}:` prefix, matching this repo's review-bot
-  convention. Area is one of `Backend`, `Frontend`, `DevOps`, `QA` — infer it from the finding's
-  file path (`wavebid-a2o-service` → Backend, `wavebid-a2o-ui` → Frontend, `scripts/`, `.github/`
-  → DevOps, a missing/weak test → QA). Severity is `🔴 Must fix` for something that breaks
-  behavior or a build gate, `🟡 Should fix` for a real but non-blocking defect, or `🔵 Nitpick` for
-  a style, naming, or cleanup suggestion with no functional consequence. Every finding gets one of
-  these three; there is no non-blocking "note" tier — if it's worth posting, it's at least a
-  nitpick.
+- Start the body with a `[Severity]` prefix, plain text, no emoji, no area tag (deliberately not
+  the review-bot's `[Area] emoji Severity` format). Severity is `[Must Fix]` for something that
+  breaks behavior or a build gate, `[Should Fix]` for a real but non-blocking defect, or
+  `[Nitpick]` for a style, naming, or cleanup suggestion with no functional consequence. Every
+  finding gets one of these three.
 - One to three sentences after the prefix: the defect and its concrete consequence, not "this
   looks wrong".
 - Quote identifiers in single quotes (`'sanitize()'`).
 - Blank line, then the fix: a short code block if code, one line otherwise. Optional closing line
   on why the fix is cheap.
-- No headers, bullets, preamble, or praise beyond the one `[Area] emoji Severity:` prefix.
+- No headers, bullets, preamble, or praise beyond the one `[Severity]` prefix.
 
 ## Steps
 
