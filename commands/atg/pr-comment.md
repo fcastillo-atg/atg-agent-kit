@@ -26,12 +26,13 @@ below runs per finding.
 Apply the **unslop** skill, then these rules:
 
 - Start the body with a `[{Area}] {emoji} {Severity}:` prefix, matching this repo's review-bot
-  convention. Area is one of `Backend`, `Frontend`, `DevOps`, `QA`, `PM`, `Senior` — infer it from
-  the finding's file path (`wavebid-a2o-service` → Backend, `wavebid-a2o-ui` → Frontend,
-  `scripts/`, `.github/` → DevOps; use `QA` for a test-coverage gap and `Senior`/`PM` only for a
-  non-blocking design note, not a defect). Severity is `🔴 Must fix` for something that breaks
-  behavior or a build gate, `🟡 Should fix` for a real but non-blocking defect, or `💬 NOTE
-  (non-blocking)` for an observation with no required action.
+  convention. Area is one of `Backend`, `Frontend`, `DevOps`, `QA` — infer it from the finding's
+  file path (`wavebid-a2o-service` → Backend, `wavebid-a2o-ui` → Frontend, `scripts/`, `.github/`
+  → DevOps, a missing/weak test → QA). Severity is `🔴 Must fix` for something that breaks
+  behavior or a build gate, `🟡 Should fix` for a real but non-blocking defect, or `🔵 Nitpick` for
+  a style, naming, or cleanup suggestion with no functional consequence. Every finding gets one of
+  these three; there is no non-blocking "note" tier — if it's worth posting, it's at least a
+  nitpick.
 - One to three sentences after the prefix: the defect and its concrete consequence, not "this
   looks wrong".
 - Quote identifiers in single quotes (`'sanitize()'`).
