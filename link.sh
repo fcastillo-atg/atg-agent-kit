@@ -23,6 +23,19 @@
 #     entirely user-level (it has no project/user distinction worth exploiting
 #     the way Claude Code does); project-level .cursor/ deploys only caused UI
 #     duplicates (brief + atg-brief).
+#   - omp COMMANDS (~/.config/opencode/commands/atg-*.md): REAL FILE COPIES,
+#     FLAT, USER-LEVEL. omp reads .claude/commands/ too, but that loader globs
+#     with gitignore:true and every wavebid checkout ignores
+#     `**/.claude/commands/atg` — so the project-scope Claude Code deploy above
+#     is invisible to omp by construction, and no in-repo path can fix it (any
+#     git ignore rule hides the files from omp; not ignoring them leaves 20
+#     untracked files in every worktree). omp's opencode-user command loader is
+#     NOT recursive and derives the picker description from body line 1, so each
+#     copy is flat with `name: "atg:<cmd>"` frontmatter (restores the /atg:<cmd>
+#     namespacing a subdir would have given) and the description duplicated as
+#     the first body line. Requires `commands.enableOpencodeUser: true` in
+#     ~/.omp/agent/config.yml (omp defaults it false). Claude Code and Cursor
+#     never read ~/.config/opencode, so this adds no picker duplicates.
 #   - SKILLS (<checkout>/.claude/skills/<name>): per-DIRECTORY SYMLINKS,
 #     PROJECT-SCOPE ONLY (deployed per checkout by link_checkout, same reasoning
 #     as Claude Code commands above). Skill discovery is readdir-based and
@@ -90,6 +103,50 @@ copy_commands_flat_to() {
     echo "$n"
 }
 
+# Materialize commands/atg/*.md as FLAT $1/atg-<name>.md for omp: frontmatter
+# reduced to `name: "atg:<cmd>"` + description, with the description repeated as
+# body line 1. omp's opencode-user loader takes the command name from
+# frontmatter `name` (its file walk is non-recursive, so a subdir would be
+# skipped entirely) and the picker description from the first body line, not
+# from frontmatter. Wipes only prior atg-*.md so unrelated commands survive.
+copy_commands_omp_to() {
+    local dest="$1"
+    mkdir -p "$dest"
+    rm -f "$dest"/atg-*.md
+    local n=0 f base out
+    for f in "$KIT"/commands/atg/*.md; do
+        base=$(basename "$f")
+        [[ "$base" == "README.md" ]] && continue
+        out="$dest/atg-${base%.md}.md"
+        awk -v out="$out" -v name="atg:${base%.md}" '
+            BEGIN { infm=0; desc=""; body="" }
+            NR==1 && /^---[[:space:]]*$/ { infm=1; next }
+            infm && /^---[[:space:]]*$/ { infm=0; next }
+            infm && /^description:[[:space:]]*/ { sub(/^description:[[:space:]]*/, ""); desc=$0; next }
+            infm { next }
+            { body = body $0 "\n" }
+            END {
+                print "---" > out
+                printf "name: \"%s\"\n", name > out
+                if (desc != "") { print "description: " desc > out }
+                print "---" > out
+                if (desc != "") { print desc > out; print "" > out }
+                printf "%s", body > out
+            }
+        ' "$f"
+        n=$((n + 1))
+    done
+    # Assert the name frontmatter landed — without it omp registers /atg-<cmd>
+    # (filename) instead of /atg:<cmd>, silently diverging from Claude Code.
+    local bad
+    bad=$(for fb in "$dest"/atg-*.md; do if [ "$(sed -n '2p' "$fb")" != "name: \"atg:$(basename "${fb%.md}" | sed 's/^atg-//')\"" ]; then echo "$fb"; fi; done)
+    if [ -n "$bad" ]; then
+        echo "refusing: omp name frontmatter missing/wrong in (awk failure?): $bad" >&2
+        return 1
+    fi
+    echo "$n"
+}
+
 # Symlink each skills/<name>/ dir into $1, pruning only prior links into KIT.
 link_skills_to() {
     local dest="$1"
@@ -144,6 +201,9 @@ link_user() {
     local n
     n=$(copy_commands_flat_to "$HOME/.cursor/commands") || exit 1
     echo "  copied $n commands -> ~/.cursor/commands/atg-*.md (Cursor CLI+UI, frontmatter stripped)"
+    local q
+    q=$(copy_commands_omp_to "$HOME/.config/opencode/commands") || exit 1
+    echo "  copied $q commands -> ~/.config/opencode/commands/atg-*.md (omp; needs commands.enableOpencodeUser: true)"
     local m
     m=$(drop_kit_skills_from "$HOME/.claude/skills")
     echo "  removed $m kit skill symlinks from ~/.claude/skills (project scope only)"
