@@ -37,6 +37,7 @@ load skills. When editing a convention, update the rule doc first, then the skil
 |---|---|---|
 | `wavebid-a2o` (Kotlin, Gradle, monorepo) | `wavebid-a2o-service/` + `wavebid-a2o-ui/` | `skills/atg-repo-profile/profiles/wavebid-a2o.md` |
 | `invoices-service` (.NET 10, standalone) | `invoices-service.sln` | `skills/atg-repo-profile/profiles/invoices-service.md` |
+| `sales-order` (Go 1.27, standalone) | `sales-order.go` | `skills/atg-repo-profile/profiles/sales-order.md` |
 
 Per-service values — build commands, paths, branch pattern, ticket prefixes, PR template, whether
 the service has changesets or feature flags — live only in those profile files. `./check.sh`
