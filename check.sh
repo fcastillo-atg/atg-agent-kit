@@ -56,4 +56,20 @@ else
     fail=1
 fi
 
+# Invariant 4: link.sh accepts every profile's repo shape.
+inv4=0
+for p in "$KIT"/skills/atg-repo-profile/profiles/*.md; do
+    [ -e "$p" ] || continue
+    id=$(basename "$p" .md)
+    if ! grep -q "$id" "$KIT/link.sh"; then
+        echo "FAIL invariant 4: link.sh does not know profile '$id'" >&2
+        inv4=1
+    fi
+done
+if [ "$inv4" -eq 0 ]; then
+    echo "ok  invariant 4: link.sh knows every profile"
+else
+    fail=1
+fi
+
 exit "$fail"

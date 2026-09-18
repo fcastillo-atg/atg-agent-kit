@@ -4,7 +4,7 @@
 #                                  #              (also prunes stale user-level
 #                                  #              Claude Code commands/skills from
 #                                  #              older link.sh versions)
-#   ./link.sh --checkout <root>    # a wavebid checkout/worktree + its subrepos:
+#   ./link.sh --checkout <root>    # a supported checkout/worktree + its subrepos:
 #                                  # project-level Claude Code commands + skills
 #
 # Asymmetry is load-bearing and mandated by each tool's discovery model:
@@ -227,22 +227,34 @@ assert_backup_ready() {
     echo "  backup verified: $cmds commands, $skills skills, clean tree @ $(git -C "$KIT" rev-parse --short HEAD)"
 }
 
-# Deploy into a wavebid checkout/worktree. Claude Code reads project-level
+# Deploy into a supported checkout/worktree. Claude Code reads project-level
 # .claude/commands/atg/ (subdir, frontmatter intact). Cursor is served entirely
 # by link_user's user-level flat deploy, so we do NOT touch project .cursor/ —
 # we only remove any stale .cursor/commands/atg subdir left by older link.sh
 # versions (it caused UI duplicates). Skills stay a dir symlink.
 link_checkout() {
     local root="$1"
-    # Guard on wavebid structure, NOT $root/.claude — .claude is gitignored, so a
-    # fresh `git worktree add` has none until we create it (copy_commands_to mkdirs).
-    [[ -d "$root/wavebid-a2o-service" && -d "$root/wavebid-a2o-ui" ]] \
-        || { echo "not a wavebid root (expected wavebid-a2o-service + wavebid-a2o-ui): $root" >&2; exit 1; }
+    # Guard on a known profile's marker, NOT $root/.claude — .claude may be absent
+    # (a fresh `git worktree add` has none until copy_commands_to mkdirs it) or
+    # tracked (invoices-service commits .claude/rules/), and neither state tells
+    # us whether this is a repo the kit supports. Markers mirror the detection
+    # table in skills/atg-repo-profile/SKILL.md; keep the two in sync.
+    local profile=""
+    if [[ -d "$root/wavebid-a2o-service" && -d "$root/wavebid-a2o-ui" ]]; then
+        profile="wavebid-a2o"
+    elif [[ -f "$root/invoices-service.sln" ]]; then
+        profile="invoices-service"
+    fi
+    [[ -n "$profile" ]] \
+        || { echo "no atg profile matches: $root (expected wavebid-a2o-service + wavebid-a2o-ui, or invoices-service.sln)" >&2; exit 1; }
     assert_backup_ready
     local n
     n=$(copy_commands_to "$root/.claude/commands/atg")
+    # Scope the stale-.cursor prune to subdirectories this profile actually has.
+    local subs=("")
+    [[ "$profile" == "wavebid-a2o" ]] && subs+=("wavebid-a2o-service" "wavebid-a2o-ui")
     local sub
-    for sub in "" "wavebid-a2o-service" "wavebid-a2o-ui"; do
+    for sub in "${subs[@]}"; do
         rm -rf "$root/$sub/.cursor/commands/atg"
     done
     # Per-skill symlinks at .claude/skills/<name>, NOT one .claude/skills/atg group
@@ -253,25 +265,28 @@ link_checkout() {
     mkdir -p "$root/.claude/skills"
     local m
     m=$(link_skills_to "$root/.claude/skills")
-    echo "  deployed $root: $n cmd copies + $m per-skill symlinks (.claude, project scope only)"
+    echo "  deployed $root [$profile]: $n cmd copies + $m per-skill symlinks (.claude, project scope only)"
 }
 
-# Walk up from $PWD looking for a wavebid root (same signature link_checkout
-# checks: wavebid-a2o-service + wavebid-a2o-ui as direct children). Lets
-# `--checkout` with no path work from anywhere inside the checkout, e.g. cwd
-# is wavebid-a2o-service itself. Echoes the root, or errors if none is found
-# by the time we hit /.
-find_wavebid_root() {
+# Walk up from $PWD looking for a root matching any profile's marker (the same
+# tests link_checkout applies). Lets `--checkout` with no path work from
+# anywhere inside a checkout, e.g. cwd is wavebid-a2o-service or src/. Echoes
+# the root, or errors if none is found by the time we hit /.
+find_repo_root() {
     local dir="$PWD"
     while true; do
         if [[ -d "$dir/wavebid-a2o-service" && -d "$dir/wavebid-a2o-ui" ]]; then
             echo "$dir"
             return 0
         fi
+        if [[ -f "$dir/invoices-service.sln" ]]; then
+            echo "$dir"
+            return 0
+        fi
         [[ "$dir" == "/" ]] && break
         dir="$(dirname "$dir")"
     done
-    echo "not inside a wavebid checkout (no ancestor of $PWD has both wavebid-a2o-service and wavebid-a2o-ui)" >&2
+    echo "not inside a repo with an atg profile (no ancestor of $PWD has wavebid-a2o-service + wavebid-a2o-ui, or invoices-service.sln)" >&2
     return 1
 }
 
@@ -279,7 +294,7 @@ if [[ "${1:-}" == "--checkout" ]]; then
     if [[ -n "${2:-}" ]]; then
         link_checkout "$2"
     else
-        root="$(find_wavebid_root)" || exit 1
+        root="$(find_repo_root)" || exit 1
         link_checkout "$root"
     fi
 else
