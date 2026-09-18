@@ -12,21 +12,37 @@ skill, never into a command's procedure text. See [Contributing](#contributing).
 
 | Skill | Owns |
 |---|---|
+| `atg-repo-profile` | Which service you are in, and its values: gate commands, repo paths, branch pattern, PR template, whether the service has changesets or feature flags. Profiles in `profiles/`, per-service recipes in `recipes/` |
 | `atg-story-artifacts` | Ticket resolution, the `bin/stories/` directory layout, every file's role, the canonical `implementation-plan.md` sections, `## As-built` semantics, the never-commit-`bin/` rule, diff base and `--branch` scoping |
 | `atg-lifecycle` | The command graph: order, which steps block, which are advisory, which stay manual, and what runs next after each |
 | `atg-testing-guide` | Scenario-versus-step vocabulary, variable conventions for guide, test-run and Jira, and the `TESTING-GUIDE.md` template (`template.md`) |
-| `atg-service-rules` | Pointer table into `wavebid-a2o-service/.claude/rules/` by what you are touching, plus the Gradle and coverage rules |
-| `atg-conventions-guard` | Portable copy of the Kotlin, Spring/JPA, Spock and feature-flag conventions, for harnesses that do not load `.claude/rules/` |
+| `atg-service-rules` | Dispatcher into each service's own rule docs, by what you are touching. Reads `rules-dir` from the profile |
+| `atg-conventions-guard` | Portable copy of the Kotlin, Spring/JPA, Spock and feature-flag conventions, for harnesses that do not load a repo's rules directory |
+| `atg-conventions-csharp` | The same for C#: layering, the `ArgumentException` error contract, xUnit and CSharpier hygiene |
 | `atg-cross-cutting-spotter` | Portable cross-cutting checklist: migration, UUIDv7, MapStruct, soft delete, `@Transactional`, flags, events, money, downstream rewrites |
+| `atg-cross-cutting-csharp` | The same for .NET: middleware order, marketplace resolution, outbound call headers, which layer publishes which message |
 | `atg-pr-self-review` | Pre-ship sanity pass: clean tree, slice alignment, leftover `TODO`/`println`, changeset gate |
 | `unslop` | Writing rules for anything a person reads (PR bodies, Jira comments, replies, briefs). Vendored from `cursor/plugins` so consumers need no separate install |
 | `jira-cli` | Jira via `acli` with `mcp-atlassian` fallback, token-efficient field selection, the ADF comment recipe |
 | `dynatrace-mcp` | Dynatrace log and metric queries via the `dynatrace-mcp` MCP server, with `reference.md` for accumulated gotchas |
 
 Skills load automatically when their description matches. Commands are invoked by name.
-The three portable convention skills overlap the service rule docs on purpose: rule docs are
-the authority in Claude Code, and the skills keep the conventions available in harnesses that
-only load skills. When editing a convention, update the rule doc first, then the skill.
+The portable convention skills overlap the service rule docs on purpose: rule docs are the
+authority in Claude Code, and the skills keep the conventions available in harnesses that only
+load skills. When editing a convention, update the rule doc first, then the skill.
+
+## Supported services
+
+| Service | Detected by | Profile |
+|---|---|---|
+| `wavebid-a2o` (Kotlin, Gradle, monorepo) | `wavebid-a2o-service/` + `wavebid-a2o-ui/` | `skills/atg-repo-profile/profiles/wavebid-a2o.md` |
+| `invoices-service` (.NET 10, standalone) | `invoices-service.sln` | `skills/atg-repo-profile/profiles/invoices-service.md` |
+
+Per-service values — build commands, paths, branch pattern, PR template, whether the service has
+changesets or feature flags — live only in those profile files. `./check.sh` fails if a
+service-specific token appears in a file that every service shares. Adding a third service is a
+new profile file, a detection row in `atg-repo-profile`, and a marker test in `link.sh`; no
+command changes.
 
 ## Commands
 
@@ -108,14 +124,19 @@ project-scope only and are not deployed here; a user-level copy would show every
 Real copies rather than symlinks: re-run `link.sh` after editing a command. Safe to re-run; it
 prunes only its own prior outputs. Restart Cursor after the first install.
 
-## Point a wavebid checkout or worktree at the kit
+## Point a checkout or worktree at the kit
 
 ```bash
-~/ATG/atg-agent-kit/link.sh --checkout /path/to/wavebid-a2o
+~/ATG/atg-agent-kit/link.sh --checkout /path/to/repo
 ```
 
-Copies commands into `<root>/.claude/commands/atg/` and symlinks each `skills/<name>/` directory
-into `<root>/.claude/skills/`. Refuses to run unless the kit has a clean commit.
+Accepts any repo matching a profile's marker (see `## Supported services`); run with no path
+from anywhere inside one. Copies commands into `<root>/.claude/commands/atg/` and symlinks each
+`skills/<name>/` directory into `<root>/.claude/skills/`, naming the resolved profile as it
+goes. Refuses to run unless the kit has a clean commit.
+
+A repo that tracks `.claude/` needs both paths gitignored — the skill symlinks hold an absolute
+path into this kit, so committing them breaks every other clone.
 
 ## Install for teammates
 
@@ -138,8 +159,12 @@ Adding a command: create `commands/atg/<name>.md`, add a row to the table above 
 `atg-lifecycle` successor table, run `link.sh` and `link.sh --checkout`.
 
 Adding knowledge: if two or more commands need the same rule, it goes in a skill. If it is a
-codebase convention, it belongs in `wavebid-a2o-service/.claude/rules/`, and the kit only points
-at it.
+codebase convention, it belongs in that service's own rules directory, and the kit only points
+at it. If it differs between services, it belongs in a profile.
+
+Run `./check.sh` before every commit. It fails if a shared command or skill names a service
+instead of a profile key, if a profile is missing a contract key, or if `link.sh` does not know
+a profile.
 
 ## Why this exists
 

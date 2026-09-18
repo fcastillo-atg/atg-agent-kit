@@ -10,22 +10,28 @@ fail=0
 # Invariant 1: service-specific tokens live in the profile mechanism and nowhere
 # else. Commands and every other skill must resolve these through atg-repo-profile.
 #
-# Three places are allowed to name a service, because mapping a service to its
-# values IS their job:
-#   skills/atg-repo-profile/   the detection table, the profiles, the recipes
-#   skills/atg-service-rules/  the per-service rule-doc pointer tables
-# Everything else names a profile KEY, never a service. Keep this list at two
-# entries: an exclusion hides a real leak, so narrow the pattern before widening
-# this.
+# A file may name a service only when it IS a per-service asset - something the
+# profile selects rather than something every service shares:
+#   skills/atg-repo-profile/         detection table, profiles, recipes
+#   skills/atg-service-rules/        per-service rule-doc pointer tables
+#   skills/atg-conventions-*/        one language's conventions, named by a profile
+#   skills/atg-cross-cutting-*/      one stack's cross-cutting checklist, ditto
+#   skills/dynatrace-mcp/reference.md  one service's log field map and gotchas
+# Everything else is shared and must name a profile KEY, never a service. Adding
+# to this list hides real leaks, so narrow the pattern first and add only a file
+# whose whole purpose is one service.
 leak=$(grep -rniE 'wavebid-a2o|gradlew|detekt|codenarc|kover|build\.gradle|\.changeset' \
     "$KIT/commands" "$KIT/skills" \
-    --exclude-dir=atg-repo-profile --exclude-dir=atg-service-rules 2>/dev/null)
+    --exclude-dir=atg-repo-profile --exclude-dir=atg-service-rules \
+    --exclude-dir=atg-conventions-guard --exclude-dir=atg-conventions-csharp \
+    --exclude-dir=atg-cross-cutting-spotter --exclude-dir=atg-cross-cutting-csharp \
+    --exclude=reference.md 2>/dev/null)
 if [ -n "$leak" ]; then
     echo "FAIL invariant 1: service-specific token outside profiles/" >&2
     echo "$leak" >&2
     fail=1
 else
-    echo "ok  invariant 1: no service-specific tokens outside profiles/"
+    echo "ok  invariant 1: no service-specific tokens in shared files"
 fi
 
 # Invariant 2: every profile declares every contract key.

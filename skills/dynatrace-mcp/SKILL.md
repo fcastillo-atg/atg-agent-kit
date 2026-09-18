@@ -1,6 +1,6 @@
 ---
 name: dynatrace-mcp
-description: Use when querying Dynatrace logs, metrics, or problems for wavebid-a2o-service via the dynatrace-mcp MCP server.
+description: Use when querying Dynatrace logs, metrics, or problems for a service via the dynatrace-mcp MCP server.
 ---
 
 # Dynatrace MCP Skill
@@ -57,14 +57,16 @@ POST to:
 
 Header: `Authorization: Bearer <token from .mcp.json>`
 
-## Standard log query pattern for wavebid-a2o-service
+## Standard log query pattern
+
+Take `dynatrace-cluster`, `dynatrace-container` and `dynatrace-filters` from the
+**atg-repo-profile** skill. A `dynatrace-filters` value of `none` means those lines are omitted.
 
 ```dql
 fetch logs, from: now()-30m
-| filter k8s.cluster.name == "a2o-dev"
-| filter k8s.container.name == "wavebid-a2o-service"
-| filter startsWith(class, "com.sellerportal") or startsWith(class, "com.atg")
-| filter k8s.namespace.name == "seller-portal"
+| filter k8s.cluster.name == "{dynatrace-cluster}"
+| filter k8s.container.name == "{dynatrace-container}"
+{dynatrace-filters}
 | sort timestamp desc
 | fields timestamp, class, level, message, thread, userId, houseId, auctionId, lotId, requestId, correlationId
 | limit 100
