@@ -7,11 +7,19 @@ set -uo pipefail
 KIT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 fail=0
 
-# Invariant 1: service-specific tokens live in profiles/ and nowhere else.
-# Commands and skills must resolve these through atg-repo-profile.
+# Invariant 1: service-specific tokens live in the profile mechanism and nowhere
+# else. Commands and every other skill must resolve these through atg-repo-profile.
+#
+# Three places are allowed to name a service, because mapping a service to its
+# values IS their job:
+#   skills/atg-repo-profile/   the detection table, the profiles, the recipes
+#   skills/atg-service-rules/  the per-service rule-doc pointer tables
+# Everything else names a profile KEY, never a service. Keep this list at two
+# entries: an exclusion hides a real leak, so narrow the pattern before widening
+# this.
 leak=$(grep -rniE 'wavebid-a2o|gradlew|detekt|codenarc|kover|build\.gradle|\.changeset' \
     "$KIT/commands" "$KIT/skills" \
-    --exclude-dir=profiles --exclude-dir=recipes 2>/dev/null)
+    --exclude-dir=atg-repo-profile --exclude-dir=atg-service-rules 2>/dev/null)
 if [ -n "$leak" ]; then
     echo "FAIL invariant 1: service-specific token outside profiles/" >&2
     echo "$leak" >&2
