@@ -1,7 +1,7 @@
 # `/atg:*` commands
 
 Canonical directory: `~/ATG/atg-agent-kit/commands/atg/`. `link.sh` deploys real copies to
-`<wavebid-root>/.claude/commands/atg/` (Claude Code) and `~/.cursor/commands/atg-*.md` (Cursor,
+`<repo-root>/.claude/commands/atg/` (Claude Code) and `~/.cursor/commands/atg-*.md` (Cursor,
 frontmatter stripped). Re-run it after editing anything here.
 
 The command table, workflow diagram, skills table and install steps are in the

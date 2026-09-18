@@ -6,7 +6,8 @@ description: Jira operations via Atlassian CLI (acli) for ATG's Jira site. Use f
 # Jira CLI (ATG)
 
 Wraps **`acli`** (Atlassian CLI, already installed — `acli --version`). This repo's Jira site is
-**`auctiontechnologygroup.atlassian.net`**; ticket prefixes are `WBPR-*` and `SP2-*`.
+**`auctiontechnologygroup.atlassian.net`**; the ticket prefixes in play come from the resolved
+profile's `ticket-prefixes` (see the **atg-repo-profile** skill).
 
 ## Resolution order (all `/atg:*` commands)
 
@@ -19,7 +20,7 @@ Do not duplicate this fallback tree in each command file — commands should jus
 ## Auth
 
 Prefer an existing ATG session. If `acli` is on the wrong site (e.g. a personal
-OAuth account) for `WBPR-*`/`SP2-*` keys, **switch** — do not re-login:
+OAuth account) for the profile's `ticket-prefixes`, **switch** — do not re-login:
 
 ```bash
 acli jira auth switch \

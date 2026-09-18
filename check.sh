@@ -34,11 +34,27 @@ else
     echo "ok  invariant 1: no service-specific tokens in shared files"
 fi
 
+# Invariant 1b: Jira key prefixes are a profile value, not a constant. Declaring
+# one (`ABC-*`) in a shared file breaks any service on a different Jira project.
+# Case-sensitive on purpose: -i would match `atg-*.md` and every other lowercase
+# glob in the docs.
+EXEMPT_DIRS="--exclude-dir=atg-repo-profile --exclude-dir=atg-service-rules"
+prefixleak=$(grep -rnE '[A-Z]{2,}-\*' \
+    "$KIT/commands" "$KIT/skills" \
+    $EXEMPT_DIRS --exclude=reference.md 2>/dev/null)
+if [ -n "$prefixleak" ]; then
+    echo "FAIL invariant 1b: ticket-prefix declaration outside a profile" >&2
+    echo "$prefixleak" >&2
+    fail=1
+else
+    echo "ok  invariant 1b: ticket prefixes come from the profile"
+fi
+
 # Invariant 2: every profile declares every contract key.
 required='id detect code-root branch-pattern story-root plans-path rules-dir
 pr-template pr-body-anchor changeset feature-flag source-ext conventions-skill
 cross-cutting-skill dynatrace-container dynatrace-cluster dynatrace-filters
-service-start'
+service-start ticket-prefixes'
 inv2=0
 for p in "$KIT"/skills/atg-repo-profile/profiles/*.md; do
     [ -e "$p" ] || continue

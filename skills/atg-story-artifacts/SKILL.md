@@ -13,9 +13,9 @@ them once. Commands say "resolve per atg-story-artifacts" instead of restating p
 In order: explicit argument, then the current branch, then a scan of the story root for a
 directory matching active work. Branch naming and the story root both come from the
 **atg-repo-profile** skill — read `branch-pattern` and `story-root` before matching, because they
-differ per service (`fc/WBPR-1234-slug` in one, bare `WBPR-4963` in another). Extract the first
-`WBPR-` or `SP2-` token from the branch name regardless of what surrounds it. Ticket prefixes are
-`WBPR-*` and `SP2-*`. If nothing resolves, ask once.
+differ per service (`fc/TICKET-1234-slug` in one, bare `TICKET-4963` in another). Extract the
+first token matching any of the profile's `ticket-prefixes` from the branch name, regardless of
+what surrounds it. If nothing resolves, ask once.
 
 ## Story directory
 

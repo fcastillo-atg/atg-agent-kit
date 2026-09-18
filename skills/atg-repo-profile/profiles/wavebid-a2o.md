@@ -19,6 +19,7 @@
 | `dynatrace-container` | `wavebid-a2o-service` |
 | `dynatrace-cluster` | `a2o-dev` |
 | `dynatrace-filters` | `\| filter startsWith(class, "com.sellerportal") or startsWith(class, "com.atg")` and `\| filter k8s.namespace.name == "seller-portal"` |
+| `ticket-prefixes` | `WBPR-*`, `SP2-*` |
 | `service-start` | `cd wavebid-a2o-service && ./gradlew bootRun &`, poll `/actuator/health` every 5s up to 120s, then fail with the last Gradle lines |
 
 ## Quality gates

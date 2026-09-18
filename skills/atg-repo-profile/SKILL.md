@@ -51,6 +51,7 @@ Every profile declares these keys. A missing key is a bug in the profile, not a 
 | `dynatrace-cluster` | `k8s.cluster.name` for log queries |
 | `dynatrace-filters` | Extra DQL filter lines beyond cluster and container, or `none` |
 | `service-start` | How to start the service locally for `/atg:test-run` |
+| `ticket-prefixes` | The Jira key prefixes whose tickets this service's work uses |
 
 Each profile also carries a `## Quality gates` table (`Step | Gate | Command | Working dir |
 On failure`) that `/atg:verify` runs in order, and a `## Notes` section for footguns.

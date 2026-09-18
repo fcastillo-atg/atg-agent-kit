@@ -19,6 +19,7 @@
 | `dynatrace-container` | `invoices-service` |
 | `dynatrace-cluster` | `a2o-dev` |
 | `dynatrace-filters` | `none` — the namespace is per-environment and per-PR (Octopus `#{Namespace}`), so there is no fixed value to filter on |
+| `ticket-prefixes` | `WBPR-*`, `SP2-*` — confirmed against WBPR-4963; the `MTGAP` key in `ci.yml` is a team board, not an issue prefix |
 | `service-start` | `cd src && dotnet run --project InvoicesService &`, poll `http://localhost:5099/health` every 5s up to 120s, then fail with the last lines of output |
 
 ## Quality gates

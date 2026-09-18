@@ -1,5 +1,5 @@
 ---
-description: Create a branch-split implementation plan for a WBPR story: LOC estimate, feature flag strategy, branch breakdown, As-built placeholder
+description: Create a branch-split implementation plan for a story: LOC estimate, feature flag strategy, branch breakdown, As-built placeholder
 ---
 
 # Story plan
