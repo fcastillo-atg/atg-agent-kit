@@ -4,6 +4,7 @@
 |---|---|
 | `id` | `invoices-service` |
 | `detect` | `invoices-service.sln` at the git toplevel |
+| `detect-paths` | `invoices-service.sln` |
 | `code-root` | `src/` |
 | `branch-pattern` | `{TICKET}` or `{TICKET}-{slug}`, no author prefix (e.g. `WBPR-4963`, `WBPR-4536-sales-order-client`) |
 | `story-root` | `bin/stories/` at the git toplevel — already ignored by `.gitignore` (`**/[Bb]in/*`) |

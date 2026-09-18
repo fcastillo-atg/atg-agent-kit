@@ -51,7 +51,7 @@ else
 fi
 
 # Invariant 2: every profile declares every contract key.
-required='id detect code-root branch-pattern story-root plans-path rules-dir
+required='id detect detect-paths code-root branch-pattern story-root plans-path rules-dir
 pr-template pr-body-anchor changeset feature-flag source-ext conventions-skill
 cross-cutting-skill dynatrace-container dynatrace-cluster dynatrace-filters
 service-start ticket-prefixes'
@@ -86,18 +86,24 @@ else
     fail=1
 fi
 
-# Invariant 4: link.sh accepts every profile's repo shape.
+# Invariant 4: detection is data, not code. link.sh reads each profile's
+# detect-paths row, so it must not name a profile itself - a hardcoded id means
+# adding a service needs a code change again.
 inv4=0
 for p in "$KIT"/skills/atg-repo-profile/profiles/*.md; do
     [ -e "$p" ] || continue
     id=$(basename "$p" .md)
-    if ! grep -q "$id" "$KIT/link.sh"; then
-        echo "FAIL invariant 4: link.sh does not know profile '$id'" >&2
+    if grep -q "$id" "$KIT/link.sh"; then
+        echo "FAIL invariant 4: link.sh hardcodes profile '$id'; detection belongs in its detect-paths row" >&2
+        inv4=1
+    fi
+    if ! grep -q '^| `detect-paths` |' "$p"; then
+        echo "FAIL invariant 4: $(basename "$p") has no detect-paths row for link.sh to read" >&2
         inv4=1
     fi
 done
 if [ "$inv4" -eq 0 ]; then
-    echo "ok  invariant 4: link.sh knows every profile"
+    echo "ok  invariant 4: detection is data; link.sh names no profile"
 else
     fail=1
 fi

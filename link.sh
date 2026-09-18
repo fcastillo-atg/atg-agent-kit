@@ -227,6 +227,55 @@ assert_backup_ready() {
     echo "  backup verified: $cmds commands, $skills skills, clean tree @ $(git -C "$KIT" rev-parse --short HEAD)"
 }
 
+# ---- profile detection -------------------------------------------------------
+# Detection lives in the profiles, not here: each profiles/<id>.md carries a
+# `detect-paths` row listing the paths that must exist at a repo's toplevel.
+# Adding a service is adding that file. Nothing below names a service.
+
+PROFILE_DIR="$KIT/skills/atg-repo-profile/profiles"
+
+# Echo the `detect-paths` value for profile $1 (space-separated, backticks out).
+profile_paths() {
+    local f="$PROFILE_DIR/$1.md"
+    [[ -f "$f" ]] || return 1
+    sed -n 's/^| `detect-paths` | *\(.*[^ ]\) *|.*/\1/p' "$f" | head -1 | tr -d '`'
+}
+
+# Echo every profile id, in filename order (first match wins, so order is stable).
+profile_ids() {
+    local f
+    for f in "$PROFILE_DIR"/*.md; do
+        [[ -e "$f" ]] && basename "$f" .md
+    done
+}
+
+# Echo the id of the first profile whose every detect path exists under $1.
+match_profile() {
+    local root="$1" id paths p ok
+    for id in $(profile_ids); do
+        paths=$(profile_paths "$id") || continue
+        [[ -n "$paths" ]] || continue
+        ok=1
+        for p in $paths; do
+            [[ -e "$root/${p%/}" ]] || { ok=0; break; }
+        done
+        if [[ "$ok" -eq 1 ]]; then
+            echo "$id"
+            return 0
+        fi
+    done
+    return 1
+}
+
+# Human-readable marker list for error messages.
+known_markers() {
+    local id out=""
+    for id in $(profile_ids); do
+        out+="${out:+; }$id: $(profile_paths "$id")"
+    done
+    echo "$out"
+}
+
 # Deploy into a supported checkout/worktree. Claude Code reads project-level
 # .claude/commands/atg/ (subdir, frontmatter intact). Cursor is served entirely
 # by link_user's user-level flat deploy, so we do NOT touch project .cursor/ —
@@ -234,25 +283,22 @@ assert_backup_ready() {
 # versions (it caused UI duplicates). Skills stay a dir symlink.
 link_checkout() {
     local root="$1"
-    # Guard on a known profile's marker, NOT $root/.claude — .claude may be absent
-    # (a fresh `git worktree add` has none until copy_commands_to mkdirs it) or
-    # tracked (invoices-service commits .claude/rules/), and neither state tells
-    # us whether this is a repo the kit supports. Markers mirror the detection
-    # table in skills/atg-repo-profile/SKILL.md; keep the two in sync.
-    local profile=""
-    if [[ -d "$root/wavebid-a2o-service" && -d "$root/wavebid-a2o-ui" ]]; then
-        profile="wavebid-a2o"
-    elif [[ -f "$root/invoices-service.sln" ]]; then
-        profile="invoices-service"
-    fi
-    [[ -n "$profile" ]] \
-        || { echo "no atg profile matches: $root (expected wavebid-a2o-service + wavebid-a2o-ui, or invoices-service.sln)" >&2; exit 1; }
+    # Guard on a profile marker, NOT $root/.claude — .claude may be absent (a
+    # fresh `git worktree add` has none until copy_commands_to mkdirs it) or
+    # tracked (a repo may commit .claude/rules/), and neither state tells us
+    # whether this is a repo the kit supports.
+    local profile
+    profile=$(match_profile "$root") \
+        || { echo "no atg profile matches: $root (markers: $(known_markers))" >&2; exit 1; }
     assert_backup_ready
     local n
     n=$(copy_commands_to "$root/.claude/commands/atg")
-    # Scope the stale-.cursor prune to subdirectories this profile actually has.
-    local subs=("")
-    [[ "$profile" == "wavebid-a2o" ]] && subs+=("wavebid-a2o-service" "wavebid-a2o-ui")
+    # Scope the stale-.cursor prune to this profile's subrepos: the detect-paths
+    # entries written with a trailing slash. A marker file (no slash) is not one.
+    local subs=("") m
+    for m in $(profile_paths "$profile"); do
+        [[ "$m" == */ ]] && subs+=("${m%/}")
+    done
     local sub
     for sub in "${subs[@]}"; do
         rm -rf "$root/$sub/.cursor/commands/atg"
@@ -268,25 +314,21 @@ link_checkout() {
     echo "  deployed $root [$profile]: $n cmd copies + $m per-skill symlinks (.claude, project scope only)"
 }
 
-# Walk up from $PWD looking for a root matching any profile's marker (the same
-# tests link_checkout applies). Lets `--checkout` with no path work from
-# anywhere inside a checkout, e.g. cwd is wavebid-a2o-service or src/. Echoes
-# the root, or errors if none is found by the time we hit /.
+# Walk up from $PWD looking for a root matching any profile (the same test
+# link_checkout applies). Lets `--checkout` with no path work from anywhere
+# inside a checkout, e.g. cwd is a subrepo or src/. Echoes the root, or errors
+# if none is found by the time we hit /.
 find_repo_root() {
     local dir="$PWD"
     while true; do
-        if [[ -d "$dir/wavebid-a2o-service" && -d "$dir/wavebid-a2o-ui" ]]; then
-            echo "$dir"
-            return 0
-        fi
-        if [[ -f "$dir/invoices-service.sln" ]]; then
+        if match_profile "$dir" >/dev/null; then
             echo "$dir"
             return 0
         fi
         [[ "$dir" == "/" ]] && break
         dir="$(dirname "$dir")"
     done
-    echo "not inside a repo with an atg profile (no ancestor of $PWD has wavebid-a2o-service + wavebid-a2o-ui, or invoices-service.sln)" >&2
+    echo "not inside a repo with an atg profile (no ancestor of $PWD has: $(known_markers))" >&2
     return 1
 }
 

@@ -4,6 +4,7 @@
 |---|---|
 | `id` | `wavebid-a2o` |
 | `detect` | `wavebid-a2o-service/` and `wavebid-a2o-ui/` at the git toplevel |
+| `detect-paths` | `wavebid-a2o-service/ wavebid-a2o-ui/` |
 | `code-root` | `wavebid-a2o-service/` |
 | `branch-pattern` | `fc/{TICKET}-{slug}` |
 | `story-root` | `bin/stories/` — under `wavebid-a2o-service/` or the monorepo root; check both |

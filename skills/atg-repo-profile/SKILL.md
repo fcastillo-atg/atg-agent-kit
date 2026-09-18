@@ -10,12 +10,9 @@ which service you are in and where to read its values.
 
 ## Detect
 
-From the git toplevel (`git rev-parse --show-toplevel`), first match wins:
-
-| Marker at toplevel | Profile |
-|---|---|
-| `wavebid-a2o-service/` and `wavebid-a2o-ui/` | `profiles/wavebid-a2o.md` |
-| `invoices-service.sln` | `profiles/invoices-service.md` |
+From the git toplevel (`git rev-parse --show-toplevel`), test each profile's `detect-paths`
+row; first profile whose paths all exist wins. The profiles are the only list — there is no
+second copy of the detection table to keep in sync, and `link.sh` reads the same rows.
 
 No match: say so and stop. Never guess values, never fall back to another profile.
 
@@ -34,7 +31,8 @@ Every profile declares these keys. A missing key is a bug in the profile, not a 
 | Key | Meaning |
 |---|---|
 | `id` | Profile name, matches the filename |
-| `detect` | The marker that selects this profile |
+| `detect` | The marker that selects this profile, in prose |
+| `detect-paths` | The same marker, machine-readable: space-separated paths that must all exist at the git toplevel. `link.sh` reads this row; a trailing `/` also marks a subrepo whose stale `.cursor/` deploy gets pruned |
 | `code-root` | Directory the build runs from, relative to the git toplevel |
 | `branch-pattern` | How a branch name encodes the ticket |
 | `story-root` | Where `bin/stories/`-style scratch lives |
@@ -58,5 +56,7 @@ On failure`) that `/atg:verify` runs in order, and a `## Notes` section for foot
 
 ## Adding a service
 
-Add `profiles/<id>.md` with every key above, add a detection row, run `./check.sh`. No command
-or skill file changes.
+Add `profiles/<id>.md` with every key above and run `./check.sh`. Detection follows from its
+`detect-paths` row — nothing else to wire, and no command, skill or `link.sh` change. A service
+on a stack the kit has not met yet also needs its own `conventions-skill` and
+`cross-cutting-skill`; those hold real knowledge, not plumbing.
