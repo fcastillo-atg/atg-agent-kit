@@ -42,6 +42,7 @@ Every profile declares these keys. A missing key is a bug in the profile, not a 
 | `pr-body-anchor` | Heading the ATG summary block is inserted above |
 | `changeset` | The changeset procedure, or `none` |
 | `feature-flag` | The flag mechanism, or `none` |
+| `migrations-path` | Where schema-migration files live, or `none` |
 | `source-ext` | Production source extensions |
 | `conventions-skill` | Which conventions skill applies |
 | `cross-cutting-skill` | Which cross-cutting checklist applies |

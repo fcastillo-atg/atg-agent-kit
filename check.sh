@@ -23,8 +23,7 @@ fail=0
 leak=$(grep -rniE 'wavebid-a2o|gradlew|detekt|codenarc|kover|build\.gradle|\.changeset' \
     "$KIT/commands" "$KIT/skills" \
     --exclude-dir=atg-repo-profile --exclude-dir=atg-service-rules \
-    --exclude-dir=atg-conventions-guard --exclude-dir=atg-conventions-csharp \
-    --exclude-dir=atg-cross-cutting-spotter --exclude-dir=atg-cross-cutting-csharp \
+    --exclude-dir='atg-conventions-*' --exclude-dir='atg-cross-cutting-*' \
     --exclude=reference.md 2>/dev/null)
 if [ -n "$leak" ]; then
     echo "FAIL invariant 1: service-specific token outside profiles/" >&2
@@ -52,7 +51,7 @@ fi
 
 # Invariant 2: every profile declares every contract key.
 required='id detect detect-paths code-root branch-pattern story-root plans-path rules-dir
-pr-template pr-body-anchor changeset feature-flag source-ext conventions-skill
+pr-template pr-body-anchor changeset feature-flag migrations-path source-ext conventions-skill
 cross-cutting-skill dynatrace-container dynatrace-cluster dynatrace-filters
 service-start ticket-prefixes'
 inv2=0

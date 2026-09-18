@@ -54,5 +54,9 @@ conventions still travel with the kit — the profile's `conventions-skill` and
 | `wavebid-a2o` | `atg-conventions-guard` | `atg-cross-cutting-spotter` |
 | `invoices-service` | `atg-conventions-csharp` | `atg-cross-cutting-csharp` |
 
+`atg-pr-self-review` is the third portable skill, service-agnostic: a pre-ship sanity pass
+(clean tree, slice alignment, leftover `TODO`/`println`, the changeset gate) that applies
+regardless of which pair above matches.
+
 They are deliberately short. The rule docs stay the authority; when both are available, the
 rule docs win.

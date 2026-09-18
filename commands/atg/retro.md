@@ -47,9 +47,9 @@ Run after the final PR merges (or right after `/atg:qa-comment`). Do not run mid
    |---|---|
    | Language style, static analysis | the matching doc under the profile's `rules-dir` |
    | Test style, fixtures | the matching test-pattern doc under the profile's `rules-dir` |
-   | Coverage gaps | `.claude/rules/402-backend-quality-checks.md` |
-   | Feature flags, Spring gotchas | `.claude/rules/303-feature-flags.md`, `302-spring-boot.md` |
-   | Migrations | `.claude/rules/202-postgresql-migrations.md`, `203-liquibase-formatting.md` |
+   | Coverage gaps | the matching quality-gate doc under the profile's `rules-dir` |
+   | Feature flags, framework gotchas | the matching doc under the profile's `rules-dir`; skip when `feature-flag` is `none` |
+   | Migrations | the matching doc under the profile's `rules-dir`; skip when `migrations-path` is `none` |
    | Recurring reviewer themes | the service's `CLAUDE.md` |
 
    A learning about the `/atg:*` commands themselves goes into a kit skill

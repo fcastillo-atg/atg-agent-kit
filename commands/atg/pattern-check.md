@@ -29,7 +29,7 @@ Diff base and `--branch` scoping: atg-story-artifacts skill.
 | Repository / entity | a repository type, a persistence entity, new entity field |
 | Mapper | a mapping type |
 | Feature flag | the profile's flag file pattern; omit this row when `feature-flag` is `none` |
-| Migration | under `src/main/resources/db/changelog/` |
+| Migration | under the profile's `migrations-path`; omit this row when it is `none` |
 | Event / messaging | RabbitMQ publisher or listener |
 
 3. **Rules pass.** For each shape, read the rule docs listed in the atg-service-rules table and

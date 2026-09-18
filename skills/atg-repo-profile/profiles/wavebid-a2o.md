@@ -14,6 +14,7 @@
 | `pr-body-anchor` | `#### Requirements` |
 | `changeset` | `.changeset/*.md` required when the diff touches `wavebid-a2o-service/` or `wavebid-a2o-ui/`, unless the PR carries `skip-changelog`. Cursor: `/gsd/changeset-wavebid-a2o`. Elsewhere: `.cursor/commands/gsd/changeset-wavebid-a2o.md` at the monorepo root. Never run interactive `pnpm changeset` from an agent session |
 | `feature-flag` | Single-file Kotlin pattern (interface + Noop + Enabled + ProxyFactory) in `{Interface}FeatureFlag.kt`; full recipe in `recipes/wavebid-a2o-feature-flag.md` |
+| `migrations-path` | `wavebid-a2o-service/src/main/resources/db/changelog/` (Liquibase changesets) |
 | `source-ext` | `.kt`, `.groovy` |
 | `conventions-skill` | `atg-conventions-guard` |
 | `cross-cutting-skill` | `atg-cross-cutting-spotter` |
@@ -21,7 +22,7 @@
 | `dynatrace-cluster` | `a2o-dev` |
 | `dynatrace-filters` | `\| filter startsWith(class, "com.sellerportal") or startsWith(class, "com.atg")` and `\| filter k8s.namespace.name == "seller-portal"` |
 | `ticket-prefixes` | `WBPR-*`, `SP2-*` |
-| `service-start` | `cd wavebid-a2o-service && ./gradlew bootRun &`, poll `/actuator/health` every 5s up to 120s, then fail with the last Gradle lines |
+| `service-start` | `cd wavebid-a2o-service && ./gradlew bootRun &`, poll `http://localhost:8080/actuator/health` every 5s up to 120s, then fail with the last Gradle lines |
 
 ## Quality gates
 
@@ -41,3 +42,6 @@ Coverage thresholds: ≥85% branch, ≥95% line.
 - `bin/` is gitignored under the service but not at the monorepo root, so the never-commit rule
   is behavioural, not enforced.
 - Default to re-running `koverVerify`; coverage drifts silently.
+- `/atg:test-run`, resolving "any existing X": prefer the `seller-portal-local` MCP tool (e.g.
+  `SELECT id, name FROM seller_portal.atg_auction_house WHERE enabled = true LIMIT 1`) over the
+  guide's shared-setup HTTP steps when it is available.

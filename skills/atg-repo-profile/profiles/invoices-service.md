@@ -14,6 +14,7 @@
 | `pr-body-anchor` | `## AI Usage Declaration` |
 | `changeset` | `none` — standalone repo, no `.changeset/` infrastructure |
 | `feature-flag` | `none` — no flag mechanism exists in this service |
+| `migrations-path` | `none` — no migration mechanism exists in this service yet (confirmed: no `Migrations` dir, no `*migrat*` path anywhere in the repo) |
 | `source-ext` | `.cs`; integration tests are `.ts` under `tests/` |
 | `conventions-skill` | `atg-conventions-csharp` |
 | `cross-cutting-skill` | `atg-cross-cutting-csharp` |

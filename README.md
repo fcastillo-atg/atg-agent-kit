@@ -57,7 +57,7 @@ Copy an existing profile and replace the values. Where each comes from:
 | Quality gates | CI config first (it is the contract), then the repo's own README or `CLAUDE.md`. Run each one by hand before writing it down |
 | `branch-pattern`, `ticket-prefixes` | `git log --oneline -30` and `git branch -a` |
 | `pr-template`, `pr-body-anchor` | The template file; the anchor is the heading the ATG block goes above |
-| `changeset`, `feature-flag` | Grep for the mechanism. Absent is a real answer — write `none` and the commands will say so and stop |
+| `changeset`, `feature-flag`, `migrations-path` | Grep for the mechanism. Absent is a real answer — write `none` and the commands will say so and stop |
 | `rules-dir` | The repo's own convention docs, if any |
 | `dynatrace-*` | The deployment manifests, or an existing log query |
 
@@ -94,11 +94,12 @@ absolute path into your kit checkout, so committing them breaks every other clon
 ```gitignore
 .claude/commands/atg/
 .claude/skills/
-.claude/plans/
 ```
 
-Hand-written `.claude/rules/` and `CLAUDE.md` stay tracked. A repo that gitignores all of
-`.claude/` already needs nothing.
+Hand-written `.claude/rules/` and `CLAUDE.md` stay tracked. **Do not** gitignore
+`.claude/plans/` — it holds the profile's `plans-path` file, the one repo-visible planning
+artifact `/atg:story-plan` commits on the implementation branch. A repo that gitignores all of
+`.claude/` needs a carve-out for that one path, or that artifact silently never reaches a PR.
 
 ## Commands
 
