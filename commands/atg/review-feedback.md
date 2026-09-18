@@ -51,9 +51,9 @@ Default to no skip flags so the matrix prints first and the user approves each s
    |---|---|
    | "Authentication disabled" in `SecurityConfig` | Feature-flag controlled |
    | Missing `@Param` on repository queries | Spring Boot 3.x `-parameters` handles it |
-   | `@KoverIgnore` on a ProxyFactory | Documented pattern, factory has its own tests |
+   | A coverage-exclusion annotation on a documented pattern | The pattern has its own tests |
    | `enabled = false` instead of delete | Soft-delete convention |
-   | Wildcard imports in `build.gradle` | Gradle DSL exception |
+   | Wildcard imports in a build script | Build-DSL exception |
 
 3. **Print the matrix and stop.** Every comment gets a row. Include the comment id so later
    `gh api` calls are unambiguous.
@@ -74,7 +74,8 @@ Default to no skip flags so the matrix prints first and the user approves each s
    atg-service-rules, show a brief inline diff.
 
 5. **Verify.** Run `/atg:verify` (or tell the user to) before any reply or push. A quick
-   `detektMain` alone is not done. Resolve what verify surfaces, max 2 iterations per gate.
+   Running one static-analysis gate alone is not done. Resolve what verify surfaces, max 2
+   iterations per gate.
 
 6. **Ask about replies.** "Post the drafted replies in-thread (✅ answer and listed ⚠️ stale)?
    yes / no / which ids." No: print drafts for manual use. Yes or `--post-replies`: post **one
@@ -104,7 +105,7 @@ Default to no skip flags so the matrix prints first and the user approves each s
    Fixed:    {X} code issues
    Replies:  {Y} posted in-thread (or skipped)
    Skipped:  {W} generic / no-action
-   Verify:   tests ✅|❌  detekt ✅|❌  codenarc ✅|❌  kover ✅|❌
+   Verify:   {one ✅|❌ per gate in the profile's quality-gate table}
    Pushed:   yes|no
    ```
 

@@ -1,7 +1,7 @@
 # `/atg:*` commands
 
 Canonical directory: `~/ATG/atg-agent-kit/commands/atg/`. `link.sh` deploys real copies to
-`<wavebid-root>/.claude/commands/atg/` (Claude Code) and `~/.cursor/commands/atg-*.md` (Cursor,
+`<repo-root>/.claude/commands/atg/` (Claude Code) and `~/.cursor/commands/atg-*.md` (Cursor,
 frontmatter stripped). Re-run it after editing anything here.
 
 The command table, workflow diagram, skills table and install steps are in the
@@ -55,7 +55,7 @@ non-obvious. Emphasis once. No "Legacy" notes; fold migrations into the rule its
 
 ## Project context
 
-These commands target ATG's `wavebid-a2o` monorepo: Spring Boot 3.x, Kotlin plus Groovy/Spock,
-trunk-based development with cookie-controlled feature flags, 85% branch and 95% line coverage,
-Detekt and CodeNarc, LOC-tiered branch splitting, PR template at the monorepo root, changesets
-for service and UI changes.
+These commands are service-agnostic. Everything that differs between services - build and gate
+commands, repo paths, branch naming, PR template, whether the service has changesets or feature
+flags - is resolved at run time from the **atg-repo-profile** skill. See `## Supported services`
+in the kit README for the current list and what adding another one takes.

@@ -43,9 +43,9 @@ hand, always resume with `--from verify`.
    planned name from `### Branch N:`. If the current branch differs, `git checkout` it,
    creating from `main` if needed.
 
-3. **Feature flag** (conditional). If `## Feature flag` puts the flag on branch N and no
-   `*FeatureFlag.kt` for it exists, run `/atg:feature-flag {description from the plan}`.
-   Otherwise skip silently.
+3. **Feature flag** (conditional). Skip silently when the profile's `feature-flag` is `none`.
+   Otherwise, if `## Feature flag` puts the flag on branch N and no flag file for it exists, run
+   `/atg:feature-flag {description from the plan}`. Otherwise skip silently.
 
 4. **Implement.** Run `/atg:story-impl {TICKET} --branch N`. Inside this chain, story-impl does
    implementation only: production code and tests from its work queue, including wiring an
@@ -60,12 +60,13 @@ hand, always resume with `--from verify`.
 6. **Pattern-check.** Run `/atg:pattern-check {TICKET} --branch N`. Advisory; record findings,
    continue.
 
-7. **Changeset** (conditional). If the diff touches `wavebid-a2o-service/` or `wavebid-a2o-ui/`
-   and no `.changeset/*.md` (excluding README) exists on the branch, follow
-   `.cursor/commands/gsd/changeset-wavebid-a2o.md` directly: scope from the diff, bump type from
-   its heuristic table (breaking → major, new user-visible behaviour → minor, else patch),
-   slug from the branch, one-sentence description from the plan. Auto-pick the bump without
-   asking, then flag it loudly in the report. Existing changeset: leave it. Out of scope: skip.
+7. **Changeset** (conditional). Read `changeset` from **atg-repo-profile**. Value `none`: skip
+   this step entirely and say so in the report. Otherwise, if the diff touches the paths the
+   profile declares and no changeset file exists on the branch, follow the profile's procedure
+   directly: scope from the diff, bump type from its heuristic table (breaking → major, new
+   user-visible behaviour → minor, else patch), slug from the branch, one-sentence description
+   from the plan. Auto-pick the bump without asking, then flag it loudly in the report. Existing
+   changeset: leave it. Out of scope: skip.
 
 8. **Story-gap.** Run `/atg:story-gap {TICKET} --branch N`. Any ❌ Missing AC: stop, print the
    table, tell the user to implement it and resume with `--from verify`.
@@ -81,5 +82,6 @@ hand, always resume with `--from verify`.
     `⚠️ Changeset auto-picked ({bump}) for {packages} — confirm before merge` (or "existed" /
     "not needed"), story-gap coverage, and the manual steps below.
 
-**Next:** `/atg:ship {TICKET} --branch N` (confirm the changeset bump first); if `N < M`,
+**Next:** `/atg:ship {TICKET} --branch N` (confirm the changeset bump first, where the profile
+declares one); if `N < M`,
 re-run with `--branch {N+1}` once this branch merges.

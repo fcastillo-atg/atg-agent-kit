@@ -1,13 +1,13 @@
 ---
-description: Create a PR after verify passes. Extends the monorepo PR template with an ATG summary block and transitions the Jira ticket
+description: Create a PR after verify passes. Extends this service's PR template with an ATG summary block and transitions the Jira ticket
 ---
 
 # Ship: create pull request
 
-Open the PR for one branch of a story once `/atg:verify` is green. Reads the monorepo PR
-template, prepends an ATG summary block, pushes, creates the PR, and moves the Jira ticket to
+Open the PR for one branch of a story once `/atg:verify` is green. Reads the service's PR
+template, inserts an ATG summary block, pushes, creates the PR, and moves the Jira ticket to
 Code Review (non-draft only). Story paths, diff base, and the `bin/` rules come from the
-atg-story-artifacts skill.
+atg-story-artifacts skill; the template path and changeset rule come from atg-repo-profile.
 
 ## Usage
 
@@ -39,18 +39,21 @@ atg-story-artifacts skill.
 4. **Files by layer.** `git diff origin/main...HEAD --name-only`, grouped: `api/`, `service/`,
    `repository/`, `domain/`, `featureflag/`, `db/changelog/`, `test/`.
 
-5. **Changeset pre-flight.** From the monorepo root, if any changed path starts with
-   `wavebid-a2o-service/` or `wavebid-a2o-ui/`, require a `.changeset/*.md` (not README) in the
-   diff or working tree. None: stop before push until the user adds one (`/atg:changeset`) or
-   explicitly confirms the PR will carry `skip-changelog`. Under `--dry-run`, report the gate
+5. **Changeset pre-flight.** Read `changeset` from **atg-repo-profile**. Value `none`: skip.
+   Otherwise apply the profile's rule — if the diff touches its declared paths and no changeset
+   file is on the branch or in the working tree, stop before push until the user adds one
+   (`/atg:changeset`) or explicitly confirms the skip label. Under `--dry-run`, report the gate
    result. Out of scope: note it and continue.
 
-6. **Read the template.** `pull_request_template.md` at the monorepo root
-   (`../pull_request_template.md` from the service). Missing: abort, never write a free-form body.
+6. **Read the template.** The profile's `pr-template`, relative to the git toplevel. Missing:
+   abort, never write a free-form body.
 
-7. **Build the body.** Prepend the ATG block above `#### Requirements`. Keep every template
-   checklist item intact. Write the prose per the **unslop** skill. Replace `LINK_TO_JIRA` with
-   `[{TICKET}](https://auctiontechnologygroup.atlassian.net/browse/{TICKET})`.
+7. **Build the body.** Insert the ATG block above the profile's `pr-body-anchor` heading. Keep
+   every template checklist item intact, including any AI-usage declaration — tick the
+   AI-assisted option, since an `/atg:*` session is AI assistance. Write the prose per the
+   **unslop** skill. Replace a `LINK_TO_JIRA` placeholder with
+   `[{TICKET}](https://auctiontechnologygroup.atlassian.net/browse/{TICKET})`; where the template
+   has no placeholder, put that link on the ATG block's first line instead.
 
    ```markdown
    ## Summary

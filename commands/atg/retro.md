@@ -21,8 +21,8 @@ Run after the final PR merges (or right after `/atg:qa-comment`). Do not run mid
 1. **Locate artifacts**: the story directory's `{TICKET}-story.md`, `implementation-plan.md`,
    and `testing/`.
 
-2. **Load the dedup baseline.** Read `wavebid-a2o-service/CLAUDE.md` and the numbered docs under
-   `wavebid-a2o-service/.claude/rules/`. Never suggest a pattern already captured there.
+2. **Load the dedup baseline.** Read the service's `CLAUDE.md` and the docs under the profile's
+   `rules-dir`. Never suggest a pattern already captured there.
 
 3. **Mine PR comments.** `gh pr list --search "{TICKET}" --state merged --json number`, then
    `gh pr view {N} --comments` and `gh api repos/{owner}/{repo}/pulls/{N}/comments`. Keep only
@@ -33,7 +33,8 @@ Run after the final PR merges (or right after `/atg:qa-comment`). Do not run mid
    discovered mid-implementation. If `## As-built` is still a placeholder, offer once to draft it
    from the merged diff before continuing.
 
-5. **Scan commits** on the merged branches for `fix(detekt)`, `fix(codenarc)`, or repeated
+5. **Scan commits** on the merged branches for fixes to a static-analysis gate named in the
+   profile's quality-gate table, or repeated
    fix attempts. Recurring lint themes are candidates.
 
 6. **Filter candidates** with the "would this happen again?" test: recurred or general enough
@@ -44,12 +45,12 @@ Run after the final PR merges (or right after `/atg:qa-comment`). Do not run mid
 
    | Pattern | Target |
    |---|---|
-   | Kotlin style, Detekt | `.claude/rules/002-kotlin.md` or `403-detekt-extra-violations.md` |
-   | Spock style, CodeNarc, fixtures | `.claude/rules/101-test-patterns.md` or `103-tests.md` |
-   | Coverage gaps | `.claude/rules/402-backend-quality-checks.md` |
-   | Feature flags, Spring gotchas | `.claude/rules/303-feature-flags.md`, `302-spring-boot.md` |
-   | Migrations | `.claude/rules/202-postgresql-migrations.md`, `203-liquibase-formatting.md` |
-   | Recurring reviewer themes | `wavebid-a2o-service/CLAUDE.md` |
+   | Language style, static analysis | the matching doc under the profile's `rules-dir` |
+   | Test style, fixtures | the matching test-pattern doc under the profile's `rules-dir` |
+   | Coverage gaps | the matching quality-gate doc under the profile's `rules-dir` |
+   | Feature flags, framework gotchas | the matching doc under the profile's `rules-dir`; skip when `feature-flag` is `none` |
+   | Migrations | the matching doc under the profile's `rules-dir`; skip when `migrations-path` is `none` |
+   | Recurring reviewer themes | the service's `CLAUDE.md` |
 
    A learning about the `/atg:*` commands themselves goes into a kit skill
    (atg-story-artifacts, atg-lifecycle, atg-testing-guide, atg-service-rules) or at most one

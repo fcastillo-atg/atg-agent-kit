@@ -31,19 +31,20 @@ Paths: **atg-story-artifacts**. Start immediately; do not wait for confirmation.
 
 2. **Check the app.**
    `curl -sf -o /dev/null -w "%{http_code}" {baseURL}/api/v3/auth -X POST -H "Content-Type: application/json" -d '{}' --max-time 5`
-   - Not reachable and `build.gradle.kts` present: `cd wavebid-a2o-service && ./gradlew bootRun &`,
-     poll `/actuator/health` every 5s up to 120s, then fail with the last Gradle lines.
-   - Not reachable and frontend or other project: stop and tell the user the command to run
+   - Not reachable and the profile's `service-start` is not `none`: run it and poll the health
+     URL it gives, on the interval it gives, then fail with the last lines of output.
+   - Not reachable and `service-start` is `none`: stop and tell the user the command to run
      (`pnpm dev` etc.), then re-run.
-   - Reachable but a backend code change was just made this session: kill the process on 8080
-     and restart with the same pattern. Announce starts and restarts; do not ask.
+   - Reachable but a backend code change was just made this session: kill whatever is listening
+     on the port named in `service-start`'s health URL, and restart with the same pattern.
+     Announce starts and restarts; do not ask.
 
 3. **Initialise the variable store.** Empty map per run. Variables chain across setup and all
    scenarios. A scenario that needs a variable from a failed scenario is SKIP.
 
-4. **Resolve test data.** When the guide says "any existing X", query the `seller-portal-local`
-   MCP tool (e.g. `SELECT id, name FROM seller_portal.atg_auction_house WHERE enabled = true LIMIT 1`).
-   If unavailable, use the guide's shared-setup HTTP steps. Store results in the map.
+4. **Resolve test data.** When the guide says "any existing X", use the guide's shared-setup HTTP
+   steps by default. Check the profile's `## Notes` for a service-specific shortcut (e.g. a local
+   MCP data tool) and prefer it when one is documented. Store results in the map.
 
 5. **Execute shared setup, then each scenario step.** For every HTTP block:
 

@@ -28,8 +28,9 @@ or touches PRs. Writes `EXPLAIN.md` into an existing story directory (per
 
 2. **Load context, best effort.** From the story directory: `{TICKET}-story.md`,
    `implementation-plan.md` (prefer `## As-built` and recorded product decisions), any prior
-   `EXPLAIN.md` to overwrite. Also the branch changeset (`.changeset/*.md` excluding README)
-   and Jira via the **jira-cli** skill, using comments where they override the description.
+   `EXPLAIN.md` to overwrite. Also the branch changeset where the profile declares one
+   (excluding its README), and Jira via the **jira-cli** skill, using comments where they
+   override the description.
    Continue from the diff alone if nothing is available.
 
 3. **Classify the surface** and pick example formats. Use labels and payloads that exist in
@@ -39,7 +40,7 @@ or touches PRs. Writes `EXPLAIN.md` into an existing story directory (per
    |---|---|
    | `SupportedColumn`, CSV labels, `lotimport` | CSV headers plus 2–3 sample rows |
    | `*Request` / `*Response`, controllers | API JSON before/after |
-   | `wavebid-a2o-ui/` | UI flow / copy before/after |
+   | a UI project in the diff | UI flow / copy before/after |
    | `db/changelog` | Schema before/after |
    | Mixed | Lead with the user-facing surface |
 

@@ -1,12 +1,11 @@
 ---
-description: Pointer to the monorepo changeset procedure — CI requires a .changeset file for service/ui PRs unless the PR has skip-changelog
+description: Pointer to this service's changeset procedure, or a clean no-op where the service has none
 ---
 
 # Changeset (pointer)
 
-CI (`.github/workflows/changeset-check.yml`) requires a `.changeset/*.md` on any PR that changes
-`wavebid-a2o-service/` or `wavebid-a2o-ui/`, unless the PR carries the `skip-changelog` label.
-This command does not duplicate the procedure.
+Some services require a changelog entry on every PR; some have no changeset system at all.
+This command does not duplicate either procedure.
 
 ## Usage
 
@@ -16,11 +15,11 @@ This command does not duplicate the procedure.
 
 ## What to do
 
-- **Cursor:** run `/gsd/changeset-wavebid-a2o`. It writes the file, confirms the bump type, and stages it.
-- **Anywhere else:** follow `.cursor/commands/gsd/changeset-wavebid-a2o.md` at the monorepo root.
-- Never run interactive `pnpm changeset` from an agent session.
-- Writing style and rules: `.changeset/README.md` and rule doc `406-changesets.md`.
+1. Read `changeset` from the **atg-repo-profile** skill.
+2. Value `none`: print "This service has no changeset system — nothing to do." and stop.
+3. Otherwise follow the procedure the profile gives, exactly. Never run an interactive
+   changeset CLI from an agent session.
 
-`/atg:ship` runs the same pre-flight and stops without a changeset or an explicit `skip-changelog` confirmation.
+`/atg:ship` runs the same pre-flight and stops without a changeset where one is required.
 
 **Next:** `/atg:ship {TICKET} [--branch N]`

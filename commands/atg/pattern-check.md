@@ -24,12 +24,12 @@ Diff base and `--branch` scoping: atg-story-artifacts skill.
 
 | Shape | Signal |
 |---|---|
-| Controller endpoint | `*Controller.kt`, new `@GetMapping`/`@PostMapping` etc. |
-| Service method | `*Service.kt`, new public method |
-| Repository / entity | `*Repository.kt`, `@Entity`, new entity field |
-| Mapper | `*Mapper.kt` (MapStruct) |
-| Feature flag | `*FeatureFlag.kt` |
-| Migration | under `src/main/resources/db/changelog/` |
+| Controller endpoint | a controller type, new route-mapped action |
+| Service method | a service or handler type, new public method |
+| Repository / entity | a repository type, a persistence entity, new entity field |
+| Mapper | a mapping type |
+| Feature flag | the profile's flag file pattern; omit this row when `feature-flag` is `none` |
+| Migration | under the profile's `migrations-path`; omit this row when it is `none` |
 | Event / messaging | RabbitMQ publisher or listener |
 
 3. **Rules pass.** For each shape, read the rule docs listed in the atg-service-rules table and
@@ -58,7 +58,7 @@ With zero findings, say so in one line.
 ## Guardrails
 
 - Every finding names the specific file and line it was compared against.
-- Skip stylistic nits Detekt and CodeNarc already cover; that is verify's job.
+- Skip stylistic nits the profile's static-analysis gates already cover; that is verify's job.
 - Prefer under-flagging to noise.
 
 **Next:** `/atg:story-gap {TICKET} [--branch N]`

@@ -1,5 +1,5 @@
 ---
-description: Create a branch-split implementation plan for a WBPR story: LOC estimate, feature flag strategy, branch breakdown, As-built placeholder
+description: Create a branch-split implementation plan for a story: LOC estimate, feature flag strategy, branch breakdown, As-built placeholder
 ---
 
 # Story plan
@@ -93,6 +93,8 @@ Do not underestimate tests.
 Needed for new user-facing behaviour, gradual rollout, or rollback risk. Not for bug fixes,
 refactors, or docs. When needed, write `## Feature flag` and put the flag in Branch 1:
 
+Omit this section entirely when the profile's `feature-flag` is `none`.
+
 ```markdown
 ## Feature flag
 **Feature name**: `{snake_case}`   **Cookie**: `FF_{snake_case}=true`
@@ -140,9 +142,8 @@ Never `git add` anything under `bin/`.
 
 ### 9. Write the repo plan file
 
-Always write `wavebid-a2o-service/.claude/plans/{TICKET}-{slug}.md` (path relative to the
-service, see rule doc `405-plans-location.md`). Read the two or three newest files there and
-match their shape. Condensed, ~100 lines, under 5K:
+Always write the profile's `plans-path`, unless it is `none` (skip this step silently then). Read
+the two or three newest files there and match their shape. Condensed, ~100 lines, under 5K:
 
 ```markdown
 # {TICKET}: {short title}

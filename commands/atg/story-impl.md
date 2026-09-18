@@ -65,7 +65,7 @@ Where a branch was kept whole instead of split, slice along the seam the split w
 
 ### Verification (after code complete)
 - [ ] `/atg:verify`, then `/atg:pattern-check {TICKET}` (advisory)
-- [ ] Changeset when service/ui paths change, see `/atg:changeset`
+- [ ] Changeset when the profile requires one, see `/atg:changeset`
 - [ ] `/atg:story-gap {TICKET}`
 - [ ] Last branch only: fill `## As-built` (below), sync `.claude/plans/{TICKET}-{slug}.md`
 - [ ] `/atg:ship {TICKET} --branch {N}`
@@ -75,15 +75,15 @@ Where a branch was kept whole instead of split, slice along the seam the split w
 
 Unless `--queue-only`, implement every Implementation item in order, committing along the
 suggested order rather than in one lump. If the work diverges from the order, say so and revise
-it. Follow the **atg-service-rules** skill. Run targeted `./gradlew test --tests '…'` for touched
+it. Follow the **atg-service-rules** skill. Run the profile's targeted test command for touched
 specs when practical; the full gate is `/atg:verify`.
 
 ### 5. As-built (last branch only)
 
 Fill `## As-built` with the pointer + delta pattern per **atg-story-artifacts**: no deviations →
-`Implemented as planned — see Branch N: Changes. No deviations. Quality gates: tests, detekt,
-CodeNarc, koverVerify.`; deviations → list only what changed. Then overwrite
-`wavebid-a2o-service/.claude/plans/{TICKET}-{slug}.md` (and `.cursor/plans/{TICKET}.md` at the
+`Implemented as planned — see Branch N: Changes. No deviations. Quality gates: all green.`;
+deviations → list only what changed. Then overwrite the profile's `plans-path`
+(and `.cursor/plans/{TICKET}.md` at the
 monorepo root if one exists).
 
 **Next:** `/atg:verify`

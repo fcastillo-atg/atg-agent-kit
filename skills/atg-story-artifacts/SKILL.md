@@ -10,9 +10,12 @@ them once. Commands say "resolve per atg-story-artifacts" instead of restating p
 
 ## Resolve the ticket
 
-In order: explicit argument, then the current branch (`fc/WBPR-1234-slug` → `WBPR-1234`), then
-`find bin/stories -type d -name '*WBPR-*'` and pick the directory matching active work. Ticket
-prefixes are `WBPR-*` and `SP2-*`. If nothing resolves, ask once.
+In order: explicit argument, then the current branch, then a scan of the story root for a
+directory matching active work. Branch naming and the story root both come from the
+**atg-repo-profile** skill — read `branch-pattern` and `story-root` before matching, because they
+differ per service (`fc/TICKET-1234-slug` in one, bare `TICKET-4963` in another). Extract the
+first token matching any of the profile's `ticket-prefixes` from the branch name, regardless of
+what surrounds it. If nothing resolves, ask once.
 
 ## Story directory
 
@@ -30,22 +33,23 @@ bin/stories/{year}/{month}/{TICKET}-{slug}/
     └── scenarios/*.sh         optional, testing-doc --with-scenarios
 ```
 
-Locate an existing directory with `find bin/stories -type d -path "*/{TICKET}-*"`. Prefer the one
+Locate an existing directory with `find {story-root} -type d -path "*/{TICKET}-*"`. Prefer the one
 containing `implementation-plan.md` when several match. Only `brief`, `story-plan`, and `scout`
 create the directory; every other command stops (or goes chat-only) when it is missing.
 
-`bin/stories/` may sit under `wavebid-a2o-service/` or the monorepo root. Check both.
+The story root is the profile's `story-root`. Some services list two candidate locations; check
+each in the order the profile gives.
 
 ## `bin/` is local scratch, never repo content
 
-Never `git add` or `git commit` anything under `bin/`. It is gitignored under the service but
-not at the monorepo root, so the rule is behavioural. Never reference a `bin/` path in a PR
+Never `git add` or `git commit` anything under `bin/`. Some services gitignore it and some do
+not, so treat the rule as behavioural rather than enforced. Never reference a `bin/` path in a PR
 body, Jira comment, or anything a reviewer or QA will read. Inline the fact instead of linking
 the file, and grep the drafted text for `bin/` before publishing.
 
-The one repo-visible planning artifact is `wavebid-a2o-service/.claude/plans/{TICKET}-{slug}.md`
-(condensed, ~100 lines, links back to the full plan; see rule doc `405-plans-location.md`).
-It is committed on the implementation branch, never on `main` alone.
+The one repo-visible planning artifact is the profile's `plans-path` (condensed, ~100 lines,
+links back to the full plan). It is committed on the implementation branch, never on `main`
+alone. A profile whose `plans-path` is `none` has no such artifact; skip it silently.
 
 ## `implementation-plan.md` canonical sections
 

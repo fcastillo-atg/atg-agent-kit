@@ -44,6 +44,8 @@ with only the `from:` timeframe parameter.
 
 ### Log field map for wavebid-a2o-service
 
+Per-service reference. Another service's fields differ; take its coordinates from its profile.
+
 Fields available on parsed log records (2026-06-01 observation):
 
 | Field | Notes |
