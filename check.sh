@@ -11,7 +11,7 @@ fail=0
 # Commands and skills must resolve these through atg-repo-profile.
 leak=$(grep -rniE 'wavebid-a2o|gradlew|detekt|codenarc|kover|build\.gradle|\.changeset' \
     "$KIT/commands" "$KIT/skills" \
-    --exclude-dir=profiles 2>/dev/null)
+    --exclude-dir=profiles --exclude-dir=recipes 2>/dev/null)
 if [ -n "$leak" ]; then
     echo "FAIL invariant 1: service-specific token outside profiles/" >&2
     echo "$leak" >&2

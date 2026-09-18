@@ -93,6 +93,8 @@ Do not underestimate tests.
 Needed for new user-facing behaviour, gradual rollout, or rollback risk. Not for bug fixes,
 refactors, or docs. When needed, write `## Feature flag` and put the flag in Branch 1:
 
+Omit this section entirely when the profile's `feature-flag` is `none`.
+
 ```markdown
 ## Feature flag
 **Feature name**: `{snake_case}`   **Cookie**: `FF_{snake_case}=true`

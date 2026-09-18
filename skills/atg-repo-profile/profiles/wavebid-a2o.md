@@ -12,7 +12,7 @@
 | `pr-template` | `pull_request_template.md` at the monorepo root (`../pull_request_template.md` from the service) |
 | `pr-body-anchor` | `#### Requirements` |
 | `changeset` | `.changeset/*.md` required when the diff touches `wavebid-a2o-service/` or `wavebid-a2o-ui/`, unless the PR carries `skip-changelog`. Cursor: `/gsd/changeset-wavebid-a2o`. Elsewhere: `.cursor/commands/gsd/changeset-wavebid-a2o.md` at the monorepo root. Never run interactive `pnpm changeset` from an agent session |
-| `feature-flag` | Single-file Kotlin pattern (interface + Noop + Enabled + ProxyFactory) in `{Interface}FeatureFlag.kt`; rules in `303-feature-flags.md` |
+| `feature-flag` | Single-file Kotlin pattern (interface + Noop + Enabled + ProxyFactory) in `{Interface}FeatureFlag.kt`; full recipe in `recipes/wavebid-a2o-feature-flag.md` |
 | `source-ext` | `.kt`, `.groovy` |
 | `conventions-skill` | `atg-conventions-guard` |
 | `cross-cutting-skill` | `atg-cross-cutting-spotter` |

@@ -43,9 +43,9 @@ hand, always resume with `--from verify`.
    planned name from `### Branch N:`. If the current branch differs, `git checkout` it,
    creating from `main` if needed.
 
-3. **Feature flag** (conditional). If `## Feature flag` puts the flag on branch N and no
-   `*FeatureFlag.kt` for it exists, run `/atg:feature-flag {description from the plan}`.
-   Otherwise skip silently.
+3. **Feature flag** (conditional). Skip silently when the profile's `feature-flag` is `none`.
+   Otherwise, if `## Feature flag` puts the flag on branch N and no flag file for it exists, run
+   `/atg:feature-flag {description from the plan}`. Otherwise skip silently.
 
 4. **Implement.** Run `/atg:story-impl {TICKET} --branch N`. Inside this chain, story-impl does
    implementation only: production code and tests from its work queue, including wiring an

@@ -46,7 +46,7 @@ Story paths come from the atg-story-artifacts skill.
    | Brief | `## Pre-Analysis` exists | | no plan, or plan without it |
    | Story Plan | substantive section beyond Pre-Analysis | | no plan, or Pre-Analysis only |
    | Story Impl (per branch) | branch exists, commits ahead of main | branch exists, 0 ahead | no branch |
-   | Feature Flag | matching `*FeatureFlag.kt` found in `src/main/kotlin` | | plan needs one, none found |
+   | Feature Flag | a flag file matching the profile's `feature-flag` pattern found under `code-root`; omit this row when `feature-flag` is `none` | | plan needs one, none found |
    | Verify | PR exists, all checks green | PR exists, checks pending or red | no PR: "run /atg:verify to check" |
    | Pattern-check | never inferred | | "advisory, not persisted, run manually" |
    | Changeset | the profile's changeset file in `git diff origin/main...{branch} --name-only`; omit this row when `changeset` is `none` | | missing and the diff touches the profile's declared paths: "⚠ likely needed" |
@@ -66,7 +66,7 @@ Story paths come from the atg-story-artifacts skill.
    | Brief | full `## Pre-Analysis` text |
    | Story Plan | entire `implementation-plan.md` |
    | Story Impl | `git diff origin/main...{branch} --stat`, `git log {branch} ^main --oneline` |
-   | Feature Flag | the flag file, located by `grep -rl {FlagName} src/main/kotlin`; zero or multiple hits: "could not uniquely locate" |
+   | Feature Flag | the flag file, located by `grep -rl {FlagName}` under the profile's `code-root`; zero or multiple hits: "could not uniquely locate" |
    | Verify | full `statusCheckRollup` (every check name and conclusion) |
    | Changeset | the matched changeset file; omit when the profile's `changeset` is `none` |
    | Ship | `gh pr view {n} --json body`; empty: "No description provided" |
