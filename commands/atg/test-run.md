@@ -31,8 +31,8 @@ Paths: **atg-story-artifacts**. Start immediately; do not wait for confirmation.
 
 2. **Check the app.**
    `curl -sf -o /dev/null -w "%{http_code}" {baseURL}/api/v3/auth -X POST -H "Content-Type: application/json" -d '{}' --max-time 5`
-   - Not reachable and `build.gradle.kts` present: `cd wavebid-a2o-service && ./gradlew bootRun &`,
-     poll `/actuator/health` every 5s up to 120s, then fail with the last Gradle lines.
+   - Not reachable: run the profile's `service-start` command and poll its health endpoint on
+     the interval the profile gives, then fail with the last lines of output.
    - Not reachable and frontend or other project: stop and tell the user the command to run
      (`pnpm dev` etc.), then re-run.
    - Reachable but a backend code change was just made this session: kill the process on 8080

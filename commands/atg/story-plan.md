@@ -142,7 +142,7 @@ Never `git add` anything under `bin/`.
 
 ### 9. Write the repo plan file
 
-Always write `wavebid-a2o-service/.claude/plans/{TICKET}-{slug}.md` (path relative to the
+Always write the profile's `plans-path` (path relative to the
 service, see rule doc `405-plans-location.md`). Read the two or three newest files there and
 match their shape. Condensed, ~100 lines, under 5K:
 

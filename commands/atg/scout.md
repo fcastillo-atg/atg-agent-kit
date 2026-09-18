@@ -71,8 +71,8 @@ For each dependency, Jira link or prose:
 
 ### 3. Verify the tag matches the repo
 
-`[BE]` wavebid-a2o-service, `[IS]` invoices-service, `[SP]` the Seller Portal half of a
-cross-service interaction, `[FE]` wavebid-a2o-ui. Confirm from a sibling that states its area.
+`[BE]` the backend monorepo service, `[IS]` invoices-service, `[SP]` the Seller Portal half of
+a cross-service interaction, `[FE]` the monorepo UI. Confirm from a sibling that states its area.
 Then ask which repo the functional requirements actually land in. A ticket whose every
 requirement names a different service than its tag is mis-scoped.
 

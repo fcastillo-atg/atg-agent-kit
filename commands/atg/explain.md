@@ -40,7 +40,7 @@ or touches PRs. Writes `EXPLAIN.md` into an existing story directory (per
    |---|---|
    | `SupportedColumn`, CSV labels, `lotimport` | CSV headers plus 2–3 sample rows |
    | `*Request` / `*Response`, controllers | API JSON before/after |
-   | `wavebid-a2o-ui/` | UI flow / copy before/after |
+   | a UI project in the diff | UI flow / copy before/after |
    | `db/changelog` | Schema before/after |
    | Mixed | Lead with the user-facing surface |
 
