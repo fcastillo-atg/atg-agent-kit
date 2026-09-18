@@ -17,9 +17,9 @@ that names its successor from this table. Do not restate the whole chain elsewhe
 | Plan | `story-plan` | Writes the plan. Skips its own analysis when Pre-Analysis exists |
 | Implement | `story-impl` | Implements one branch from `### Branch N:` |
 | Implement | `feature-flag` | Only when the plan calls for one. Always Branch 1 |
-| Quality gate | `verify` | Blocks. Tests → Detekt → CodeNarc → Kover, auto-fix, max 3 cycles per gate |
+| Quality gate | `verify` | Blocks. Runs the profile's quality-gate table in order, auto-fix, max 3 cycles per gate |
 | Quality gate | `pattern-check` | Advisory. Never blocks |
-| Quality gate | `changeset` | Required when the diff touches `wavebid-a2o-service/` or `wavebid-a2o-ui/`, unless the PR carries `skip-changelog`. Pointer to `/gsd/changeset-wavebid-a2o` and rule doc `406-changesets.md` |
+| Quality gate | `changeset` | Conditional. Required when the profile's `changeset` value is not `none` and the diff touches its declared paths. No-ops otherwise |
 | Pre-ship | `story-gap` | Blocks on any ❌ Missing AC |
 | Pre-ship | `testing-doc` | Last branch only. Writes `testing/TESTING-GUIDE.md` |
 | Pre-ship (optional) | `test-run` | Executes the guide locally. Catches what unit tests miss |

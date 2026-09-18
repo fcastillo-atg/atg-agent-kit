@@ -49,7 +49,7 @@ Story paths come from the atg-story-artifacts skill.
    | Feature Flag | matching `*FeatureFlag.kt` found in `src/main/kotlin` | | plan needs one, none found |
    | Verify | PR exists, all checks green | PR exists, checks pending or red | no PR: "run /atg:verify to check" |
    | Pattern-check | never inferred | | "advisory, not persisted, run manually" |
-   | Changeset | `.changeset/*.md` in `git diff origin/main...{branch} --name-only` | | missing and diff touches service/ui: "⚠ likely needed" |
+   | Changeset | the profile's changeset file in `git diff origin/main...{branch} --name-only`; omit this row when `changeset` is `none` | | missing and the diff touches the profile's declared paths: "⚠ likely needed" |
    | Story Gap | never inferred | | "last run unknown, re-run to confirm" unless As-built states AC coverage |
    | Ship | PR merged | PR open | no PR |
    | Testing-doc / Test-run | guide and progress exist, progress passes | progress shows failures | either missing |
@@ -68,7 +68,7 @@ Story paths come from the atg-story-artifacts skill.
    | Story Impl | `git diff origin/main...{branch} --stat`, `git log {branch} ^main --oneline` |
    | Feature Flag | the flag file, located by `grep -rl {FlagName} src/main/kotlin`; zero or multiple hits: "could not uniquely locate" |
    | Verify | full `statusCheckRollup` (every check name and conclusion) |
-   | Changeset | the matched `.changeset/*.md` |
+   | Changeset | the matched changeset file; omit when the profile's `changeset` is `none` |
    | Ship | `gh pr view {n} --json body`; empty: "No description provided" |
    | Testing-doc / Test-run | entire guide / progress file |
    | QA-comment | matched comment body |

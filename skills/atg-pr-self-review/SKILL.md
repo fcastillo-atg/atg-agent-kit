@@ -23,7 +23,7 @@ This skill performs a lightweight final check between implementation and PR crea
 3. Obvious leftovers
    - Scan for `TODO`, `FIXME`, `println`, `System.out`
 4. Changeset gate
-   - If diff touches `wavebid-a2o-service/` or `wavebid-a2o-ui`, ensure `.changeset/*.md` exists or user confirms `skip-changelog`
+   - If the profile's `changeset` is not `none` and the diff touches its declared paths, ensure a changeset file exists or the user confirms the skip label
 5. PR readiness pointers
    - If concerns found, list exact blockers before `/atg:ship`
 
@@ -33,7 +33,7 @@ Provide:
 - "Ready to ship" or "Blocked"
 - Numbered blocker list (if blocked)
 - Next command recommendation
-  - `/gsd/changeset-wavebid-a2o` or `/atg:changeset` for missing changeset
+  - the profile's changeset procedure, or `/atg:changeset`, for a missing changeset
   - `/atg:ship {TICKET} --branch {N}` when clear
 
 ## Guardrails

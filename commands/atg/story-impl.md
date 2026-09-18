@@ -65,7 +65,7 @@ Where a branch was kept whole instead of split, slice along the seam the split w
 
 ### Verification (after code complete)
 - [ ] `/atg:verify`, then `/atg:pattern-check {TICKET}` (advisory)
-- [ ] Changeset when service/ui paths change, see `/atg:changeset`
+- [ ] Changeset when the profile requires one, see `/atg:changeset`
 - [ ] `/atg:story-gap {TICKET}`
 - [ ] Last branch only: fill `## As-built` (below), sync `.claude/plans/{TICKET}-{slug}.md`
 - [ ] `/atg:ship {TICKET} --branch {N}`
