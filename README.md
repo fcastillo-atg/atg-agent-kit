@@ -38,11 +38,67 @@ load skills. When editing a convention, update the rule doc first, then the skil
 | `wavebid-a2o` (Kotlin, Gradle, monorepo) | `wavebid-a2o-service/` + `wavebid-a2o-ui/` | `skills/atg-repo-profile/profiles/wavebid-a2o.md` |
 | `invoices-service` (.NET 10, standalone) | `invoices-service.sln` | `skills/atg-repo-profile/profiles/invoices-service.md` |
 
-Per-service values — build commands, paths, branch pattern, PR template, whether the service has
-changesets or feature flags — live only in those profile files. `./check.sh` fails if a
-service-specific token appears in a file that every service shares. Adding a third service is a
-new profile file, a detection row in `atg-repo-profile`, and a marker test in `link.sh`; no
-command changes.
+Per-service values — build commands, paths, branch pattern, ticket prefixes, PR template, whether
+the service has changesets or feature flags — live only in those profile files. `./check.sh`
+fails if a service-specific token appears in a file that every service shares.
+
+## Adding a service
+
+**Write one file.** `skills/atg-repo-profile/profiles/<id>.md`, with every key in the
+`atg-repo-profile` contract plus a `## Quality gates` table. `link.sh` discovers it from its
+`detect-paths` row, so there is nothing to register: no command, skill or `link.sh` edit.
+
+Copy an existing profile and replace the values. Where each comes from:
+
+| Key | Where to find it |
+|---|---|
+| `detect-paths` | A file or directory at the repo root that no other service has. Trailing `/` also marks a subrepo whose stale `.cursor/` deploy gets pruned |
+| `code-root` | Where the build runs from — often `src/`, a module dir, or `.` |
+| Quality gates | CI config first (it is the contract), then the repo's own README or `CLAUDE.md`. Run each one by hand before writing it down |
+| `branch-pattern`, `ticket-prefixes` | `git log --oneline -30` and `git branch -a` |
+| `pr-template`, `pr-body-anchor` | The template file; the anchor is the heading the ATG block goes above |
+| `changeset`, `feature-flag` | Grep for the mechanism. Absent is a real answer — write `none` and the commands will say so and stop |
+| `rules-dir` | The repo's own convention docs, if any |
+| `dynatrace-*` | The deployment manifests, or an existing log query |
+
+Then run `./check.sh`. It fails if the profile is missing a contract key or a gate table.
+
+**A stack the kit has not met needs two more files**: `skills/atg-conventions-<lang>/SKILL.md`
+and `skills/atg-cross-cutting-<lang>/SKILL.md`, named by the profile's `conventions-skill` and
+`cross-cutting-skill`. These are the only real writing — layering, error contract, test
+conventions, and the things whose blast radius reaches past the file being edited. A service on
+a stack already covered just points at the existing pair.
+
+Two rules keep this honest. Never write a value you have not verified against the repo; a wrong
+gate command is worse than a missing profile, because the command runs it. And never reach for
+a value by editing a command — if something differs per service and has no key, add the key to
+the contract, to `check.sh`'s required list, and to every profile.
+
+## Using the kit from another repo
+
+You do not need to fork it or vendor anything:
+
+```bash
+git clone https://github.com/fcastillo-atg/atg-agent-kit.git ~/ATG/atg-agent-kit
+~/ATG/atg-agent-kit/link.sh                        # once per machine (Cursor, omp)
+~/ATG/atg-agent-kit/link.sh --checkout /path/to/repo   # once per checkout or worktree
+```
+
+The checkout deploy refuses any repo without a matching profile, so step two is also the test
+that your profile works. Re-run both after pulling kit updates — commands are copies, not
+symlinks.
+
+**If the repo tracks `.claude/`**, gitignore the deploy first. The skill symlinks hold an
+absolute path into your kit checkout, so committing them breaks every other clone:
+
+```gitignore
+.claude/commands/atg/
+.claude/skills/
+.claude/plans/
+```
+
+Hand-written `.claude/rules/` and `CLAUDE.md` stay tracked. A repo that gitignores all of
+`.claude/` already needs nothing.
 
 ## Commands
 
