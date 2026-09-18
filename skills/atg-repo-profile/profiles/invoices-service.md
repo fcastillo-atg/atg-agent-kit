@@ -37,10 +37,14 @@ invent one. Do not add a coverage step without agreeing a number first.
 
 ## Notes
 
-- **`dotnet` is not on `PATH` on the current machine.** It is at `/usr/local/share/dotnet`. Prefix
-  gate commands with `export PATH="/usr/local/share/dotnet:$PATH"` when `command -v dotnet` fails.
+- **A .NET 10 SDK is required and a .NET 9 one will not do.** `NETSDK1045` on every project is the
+  symptom. A machine may carry both: `/usr/local/share/dotnet` is the system root, and a
+  user-local root at `~/.dotnet` can hold the 10.x SDK. Whichever `dotnet` is first on `PATH`
+  decides, so check `dotnet --list-sdks` before trusting a build failure.
 - Run `dotnet tool restore` in `src/` once per machine before the format gate; CSharpier is a local
-  tool (`src/.config/dotnet-tools.json`, pinned to 1.3.0).
+  tool (`src/.config/dotnet-tools.json`, pinned to 1.3.0). Re-run it after switching SDK roots.
+- Gate 4 needs `pnpm install` in `tests/` first; without it the lint script fails on missing
+  binaries rather than on real findings.
 - `pnpm test` in `tests/` is a decoy that exits 1 by design. The integration entry point is
   `pnpm test:int`, and it needs a reachable service — that is `/atg:test-run`, not `/atg:verify`.
 - Git hooks already cover part of this: pre-commit formats staged files, pre-push runs
