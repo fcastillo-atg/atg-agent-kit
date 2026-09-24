@@ -59,7 +59,11 @@ Postman variable rules: **atg-testing-guide**. Paths and the never-reference-`bi
 
 5. **Assemble** using the template below, prose per the **unslop** skill. The AI-disclaimer line is mandatory in every comment
    and must appear verbatim, never paraphrased. If `TESTING-PROGRESS.md` shows every scenario
-   PASS, append `*Locally verified — all {N} scenarios passed.*` without naming the file.
+   PASS, append one verification line naming the date, what was actually exercised, and the step
+   numbers as this comment shows them, without naming the file. Never cite the guide's scenario
+   count: a reader sees Steps, and the two rarely match. Say plainly where it was not run, e.g.
+   `*Verified 2026-09-23 against a locally running service calling stage, not the branch build
+   above. Steps 3 to 6 passed.*`
    Grep the result for `bin/` and fix any hit.
 
    Write it to `testing/QA-COMMENT.md` now, including under `--dry-run`. This file is the
