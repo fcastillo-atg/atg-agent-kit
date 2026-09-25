@@ -51,7 +51,7 @@ Cross-cutting, any time: `status` (text table), `story-view` (published dashboar
 | `qa-comment` | `retro {TICKET}` immediately, do not wait for QA sign-off |
 | `retro` | next story: `scout` or `brief` |
 
-## `story-auto-run`
+## `story-autopilot`
 
 Runs `brief --auto → story-plan → feature-flag → story-impl → verify → pattern-check → changeset
 → story-gap → As-built → testing-doc` for one branch, unattended, stopping only at a hard

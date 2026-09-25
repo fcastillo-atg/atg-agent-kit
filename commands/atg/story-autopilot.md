@@ -2,11 +2,12 @@
 description: Chain brief → story-plan → feature-flag → story-impl → verify → pattern-check → changeset → story-gap → testing-doc for one branch, unattended; ship and qa-comment stay manual
 ---
 
-# Story auto-run
+# Story autopilot
 
 Run one branch of a story through the implementation chain without invoking each command by
-hand. Autonomous: no pauses, stops only at a hard blocker. Never runs `/atg:ship` or
-`/atg:qa-comment`. Order and gate semantics: **atg-lifecycle**. Paths: **atg-story-artifacts**.
+hand. Autonomous: no pauses, stops only at a hard blocker. Autopilot flies the cruise, not the
+takeoff or the landing: it never runs `/atg:ship` or `/atg:qa-comment`. Order and gate
+semantics: **atg-lifecycle**. Paths: **atg-story-artifacts**.
 
 Blast radius: this writes and auto-fixes production code, may scaffold a feature flag, and may
 write a changeset, all without a checkpoint. For a review point before coding, run
@@ -15,11 +16,11 @@ write a changeset, all without a checkpoint. For a review point before coding, r
 ## Usage
 
 ```bash
-/atg:story-auto-run {TICKET}                   # branch from current git branch, else 1
-/atg:story-auto-run {TICKET} --branch N
-/atg:story-auto-run {TICKET} --skip-brief      # no brief even when no plan exists
-/atg:story-auto-run {TICKET} --from STEP       # resume at STEP
-/atg:story-auto-run {TICKET} --with-scenarios  # passthrough to testing-doc
+/atg:story-autopilot {TICKET}                   # branch from current git branch, else 1
+/atg:story-autopilot {TICKET} --branch N
+/atg:story-autopilot {TICKET} --skip-brief      # no brief even when no plan exists
+/atg:story-autopilot {TICKET} --from STEP       # resume at STEP
+/atg:story-autopilot {TICKET} --with-scenarios  # passthrough to testing-doc
 ```
 
 `STEP` ∈ `brief, story-plan, feature-flag, story-impl, verify, pattern-check, changeset,

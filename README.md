@@ -125,7 +125,7 @@ cross-cutting tools you can reach for at any point.
 | `/atg:ship` | Ship (manual) | Creates the PR from the monorepo template, transitions Jira |
 | `/atg:qa-comment` | Post-merge (manual) | Drafts and posts a Postman-style QA comment to Jira after approval |
 | `/atg:retro` | Wrap-up | Mines the story for durable patterns; writes only what you pick |
-| `/atg:story-auto-run` | Orchestrator | Chains brief through testing-doc for one branch, unattended. `ship` and `qa-comment` stay manual |
+| `/atg:story-autopilot` | Orchestrator | Chains brief through testing-doc for one branch, unattended. `ship` and `qa-comment` stay manual |
 
 ### Cross-cutting commands
 
@@ -144,7 +144,7 @@ Summary:
 
 ```mermaid
 flowchart TD
-    subgraph autorun["/atg:story-auto-run (unattended)"]
+    subgraph autopilot["/atg:story-autopilot (unattended)"]
         direction TB
         brief["brief (optional)"] --> storyplan["story-plan"]
         storyplan --> storyimpl["story-impl"]

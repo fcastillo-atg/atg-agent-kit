@@ -11,7 +11,7 @@ those dots into one story instead of inventing a new one.
 what each command below does in isolation.
 
 Steps 1 through "testing-doc" below (everything up to `ship`) are exactly what
-**`/atg:story-auto-run WBPR-4032`** would run unattended in one shot, branch by branch,
+**`/atg:story-autopilot WBPR-4032`** would run unattended in one shot, branch by branch,
 stopping only at a hard blocker (like the missing-AC failure in step 4). This walkthrough
 runs them one command at a time instead, to show what each one actually produces.
 
